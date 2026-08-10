@@ -42,15 +42,15 @@
                                 ; ---------------------------------------------------------------------------
                                 ; TARGET AND TOOLCHAIN
                                 ;
-                                ; Target computer : TIKI 100
-                                ; Operating system: TIKO environment
-                                ; CPU	: Z80
-                                ; Assembler	: Microsoft MACRO-80 (M80)
-                                ; Linker	: Microsoft LINK-80 (L80)
+                                ; Target computer 	: TIKI 100
+                                ; Operating system	: TIKO environment
+                                ; CPU			: Z80
+                                ; Assembler		: Microsoft MACRO-80 (M80)
+                                ; Linker		: Microsoft LINK-80 (L80)
                                 ;
                                 ; Suggested TIKO build:
                                 ;
-                                ;	M80 =SWEET
+                                ;	M80 =SWEET/Z
                                 ;	L80 SWEET,SWEET/N/E
                                 ;
                                 ; ---------------------------------------------------------------------------
@@ -100,22 +100,22 @@
                                 ;	Universal PT2/PT3 player by S.V. Bulba, 2004-2007.
                                 ;
                                 ; Fixed configuration in this edition:
-                                ;	PT3 only	= yes
+                                ;	PT3 only		= yes
                                 ;	register calculator	= yes
-                                ;	channel order	= ABC
-                                ;	loop checker	= disabled
+                                ;	channel order		= ABC
+                                ;	loop checker		= disabled
                                 ;	current position	= disabled
                                 ;	player identifier	= disabled
                                 ;
                                 ; ---------------------------------------------------------------------------
                                 ; SWEET DREAMS MODULE
                                 ;
-                                ; Title	: Sweet Dreams
+                                ; Title		: Sweet Dreams
                                 ; Module title: "Sweet Dreams" Eurythmics (rmx)
                                 ; PT3 author	: nq/skrju, 211211
-                                ; Year	: 2011
+                                ; Year		: 2011
                                 ; Format	: PT3
-                                ; Chip	: AY-compatible
+                                ; Chip		: AY-compatible
 SWEET							PAGE	1-2
 
 
@@ -488,7 +488,7 @@
   81D4    17                    	RLA
   81D5    E6 07                 	AND 7
   81D7    F5                    	PUSH AF ;NoteTable number
-  81D8    21 1F18               	LD	HL,01F18H	; M80: immediate value; parentheses would mean indirect LD
+  81D8    21 1F18               	LD	HL,01F18H
   81DB    22 8539               	LD (SamCnv),HL
   81DE    3E BA                 	LD A,0BAH
   81E0    32 8504               	LD (OrnCP),A
@@ -602,7 +602,7 @@
   827C    D5                    	PUSH DE
   827D    EB                    	EX DE,HL
   827E    11 0017               	LD DE,23
-  8281    DD 26 08              	DB	0DDH,026H,08H	; LD IXH,8 - exact undocumented Z80 opcode
+  8281    DD 26 08              	DB	0DDH,026H,08H
                                 
   8284    CB 38                 L2:	SRL B
   8286    CB 19                 	RR C
@@ -615,7 +615,7 @@
   828E    8A                    	ADC A,D
   828F    77                    	LD (HL),A
   8290    19                    	ADD HL,DE
-  8291    DD 25                 	DB	0DDH,025H	; DEC IXH - exact undocumented Z80 opcode
+  8291    DD 25                 	DB	0DDH,025H
   8293    20 EF                 	JR NZ,L2
                                 
   8295    D1                    	POP DE
@@ -1590,18 +1590,18 @@
                                 ; ---------------------------------------------------------------------------
                                 ; SWEET DREAMS - EMBEDDED PT3 MODULE
                                 ;
-                                ;	Title	: Sweet Dreams
+                                ;	Title		: Sweet Dreams
 SWEET							PAGE	1-27
 
 
                                 ;	Module title: "Sweet Dreams" Eurythmics (rmx)
                                 ;	PT3 author	: nq/skrju, 211211
-                                ;	Year	: 2011
-                                ;	Format	: Pro Tracker 3 (PT3)
-                                ;	Chip	: AY-compatible
-                                ;	Layout	: ABC, standard three channel
+                                ;	Year		: 2011
+                                ;	Format		: Pro Tracker 3 (PT3)
+                                ;	Chip		: AY-compatible
+                                ;	Layout		: ABC, standard three channel
                                 ;	Duration	: approximately 1:42.23
-                                ;	Size	: 4478 bytes
+                                ;	Size		: 4478 bytes
                                 ;
                                 ; ---------------------------------------------------------------------------
   8A0C                          SONGBG:
