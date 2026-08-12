@@ -1,11 +1,11 @@
                                 ;	SWEET.MAC
                                 ;
-                                ;	2026 TIKI 100 RESIDENT PT3 MUSIC DRIVER BY TOM BRAUTASET
+                                ;	RESIDENT PT3 MUSIC PLAYER BY TOM BRAUTASET
                                 ;
                                 ; ---------------------------------------------------------------------------
                                 ;	PURPOSE
                                 ;
-                                ;	Self-contained resident music driver for TIKI 100 / TIKO.
+                                ;	Self-contained resident music player.
                                 ;
                                 ;	First invocation copies the resident image to 8000H, saves the original
                                 ;	TIKO FF16H vector, initializes the player, installs the TSR and returns
@@ -15,10 +15,10 @@
                                 ;	and removes the resident hook.
                                 ;
                                 ; ---------------------------------------------------------------------------
-                                ;	2026 TIKI 100 ADAPTATION
+                                ;	ADAPTATION
                                 ;
                                 ;	TIKI-specific work includes the TIKO resident integration, 125-to-50 Hz
-                                ;	scheduler, TIKI AY-3-8912 output backend and low-overhead interrupt path.
+                                ;	scheduler, AY-3-8912 2 MHz output backend and low-overhead interrupt path.
                                 ;
                                 ;	The player core and music retain their original credits at the relevant
                                 ;	source sections below.
@@ -26,17 +26,18 @@
                                 ; ---------------------------------------------------------------------------
                                 ;	TARGET AND TOOLCHAIN
                                 ;
-                                ;	Target computer	: TIKI 100
-                                ;	Operating system	: TIKO
-                                ;	CPU				: Z80A, 4 MHz
-                                ;	Assembler			: Microsoft MACRO-80 (M80)
-                                ;	Linker			: Microsoft LINK-80	 (L80)
+                                ;	Target computer  : TIKI 100
+                                ;	Operating system : TIKO
+                                ;	CPU              : Z80A, 4 MHz
+                                ;	Assembler        : Microsoft MACRO-80 (M80)
+                                ;	Linker           : Microsoft LINK-80	(L80)
                                 ;
                                 ;	Suggested TIKO build:
                                 ;
-                                ;	M80 =SWEET/L/Z
+                                ;	M80 =SWEET or M80 =SWEET/Z or M80 =SWEET/L/Z or M80 =SWEET/L
                                 ;	L80 SWEET,SWEET/N/E
                                 ; ---------------------------------------------------------------------------
+
                                 	.Z80
                                 	TITLE	SWEET - TIKI 100 RESIDENT MUSIC PLAYER
 
@@ -56,6 +57,7 @@
                                 ; ---------------------------------------------------------------------------
                                 ;	TRANSIENT TIKO LOADER
                                 ; ---------------------------------------------------------------------------
+
   0100                          ENTRY:
                                 	;	If FF16H already points at 8000H, this run means stop/uninstall.
   0100    2A FF16               	LD	HL,(CTCVEC)
@@ -99,7 +101,7 @@
 
                                 	;	Since this program was created for a Norwegian 8-bit computer,
                                 	;	the screen output uses the TIKI 100 character set:
-                                	;	"|" represents "C8" and "}" represents "C%".
+                                	;	"|" represents "ø" and "}" represents "å".
   013B                          MSGON:
   013B    0D 0A 53 77           	DB	CR,LF,"Sweet Dreams spiller.",CR,LF
   013F    65 65 74 20
@@ -1602,15 +1604,16 @@
                                 ; ---------------------------------------------------------------------------
                                 ;	EMBEDDED PT3 MODULE
                                 ;
-                                ;	Title	: "Sweet Dreams" Eurythmics (rmx)
-                                ;	Author	: nq/skrju, 211211
-                                ;	Year	: 2011
-                                ;	Format	: Pro Tracker 3 (PT3)
-                                ;	Chip	: AY-compatible
-                                ;	Layout	: ABC, three channels
+                                ;	Title	    : "Sweet Dreams" Eurythmics (rmx)
+                                ;	Author	  : nq/skrju, 211211
+                                ;	Year	    : 2011
+                                ;	Format	  : Pro Tracker 3 (PT3)
+                                ;	Chip	    : AY-compatible
+                                ;	Layout	  : ABC, three channels
                                 ;	Duration	: approximately 1:42.23
-                                ;	Size	: 4478 bytes
+                                ;	Size	    : 4478 bytes
                                 ; ---------------------------------------------------------------------------
+
   89D3                          SONGBG:
   89D3    7E 05 BF 02           	DB	7EH,05H,0BFH,02H,7CH,05H,00H,6BH,0FH,1CH,0FH,16H,00H,00H,20H,63H
   89D7    7C 05 00 6B
