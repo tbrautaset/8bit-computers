@@ -1604,14 +1604,14 @@
                                 ; ---------------------------------------------------------------------------
                                 ;	EMBEDDED PT3 MODULE
                                 ;
-                                ;	Title	    : "Sweet Dreams" Eurythmics (rmx)
-                                ;	Author	  : nq/skrju, 211211
-                                ;	Year	    : 2011
-                                ;	Format	  : Pro Tracker 3 (PT3)
-                                ;	Chip	    : AY-compatible
-                                ;	Layout	  : ABC, three channels
+                                ;	Title			: "Sweet Dreams" Eurythmics (rmx)
+                                ;	Author		: nq/skrju, 211211
+                                ;	Year			: 2011
+                                ;	Format		: Pro Tracker 3 (PT3)
+                                ;	Chip			: AY-compatible
+                                ;	Layout		: ABC, three channels
                                 ;	Duration	: approximately 1:42.23
-                                ;	Size	    : 4478 bytes
+                                ;	Size			: 4478 bytes
                                 ; ---------------------------------------------------------------------------
 
   89D3                          SONGBG:
@@ -2752,84 +2752,84 @@
 Macros:
 
 Symbols:
-806C 	.LOAD_RETURN    8035 	.PAUSE_RETURN   80AF 	.PLAY50
-8049 	.RESUME_RETURN  809E 	.STOP_RETURN    8689 	ADDTOEN
-8812 	ADDTONS         85D7 	ADIPTA          862B 	ADIPTB
-863F 	ADIPTC          881D 	AMPL            0008 	AMPLA
-0009 	AMPLB           000A 	AMPLC           8813 	AYREGS
-0005 	BDOS            0002 	CCRAMP          0004 	CCRENV
-0003 	CCRNOS          0006 	CCRTON          0014 	CENVEN
-0015 	CFLAGS          839D 	CGLISS          87B6 	CHANA
-87D3 	CHANB           87F0 	CHANC           84D2 	CHNOAC
-8547 	CHNOAM          001D 	CHPSIZ          8461 	CHREGS
-8476 	CH_ACTIVE       853F 	CH_AMIN         852D 	CH_AMP
-8550 	CH_APOS         85A2 	CH_COUNTER      8561 	CH_ENV
-859B 	CH_EXIT         8597 	CH_MIX          8568 	CH_NOEN
-849F 	CH_NOK          8499 	CH_NTP          85BA 	CH_ONDL
-848E 	CH_ORPS         84BA 	CH_SMPS         8518 	CH_STPP
-8544 	CH_SVAM         8556 	CH_VOL          0011 	CNNTSK
-0012 	CNOTE           001B 	CNTSK           000C 	COFDEL
-000B 	CONDEL          000A 	CONOFF          000D 	CORPTR
-8225 	CORR_1          8233 	CORR_2          0000 	CPSIOR
-0001 	CPSISM          000D 	CR              85E2 	CRPSPTR
-0013 	CSLNOT          000F 	CSMPTR          84E5 	CSP_
-FF16 	CTC3VEC         FF16 	CTCVEC          0008 	CTNACC
-0019 	CTNDEL          0016 	CTNDLY          0005 	CTSCNT
-0017 	CTSTEP          8810 	CUREDEL         880E 	CURESLD
-001C 	CVOL            83F0 	C_DELAY         83DE 	C_ENGLS
-8411 	C_NOP           83C0 	C_ORPOS         8329 	C_PORTM
-83BA 	C_SMPOS         83C6 	C_VIBRT         8649 	DELAY
-880D 	DELYCNT         0100 	ENTRY           000B 	ENV
-8821 	ENVBASE         000D 	ENVTP           86A5 	ENV_DEL
-86A8 	ESLDADD         84C1 	E_              80D4 	FAST_CHAIN_AFTER
-80AD 	FAST_CHAIN_NO_PL 83B0 	GL36            8121 	INIT
-817A 	INITCOMMON      8259 	INITV1          8252 	INITV2
-81F3 	L1              8200 	L2              8160 	L20
-8162 	L21             8204 	L3              000A 	LF
-0117 	LOADIT          8382 	LOSTEP          85EA 	LPOSPTR
-8249 	M1              825A 	M2              826D 	M3
-8437 	MDAD1           8421 	MDAD2           89D3 	MDLADDR
-0007 	MIXER           85FD 	MODADDR         017B 	MSGOFF
-013B 	MSGON           806D 	MUSIC_IDLE      8009 	MUSIC_INITIALIZE
-804E 	MUSIC_LOAD      801B 	MUSIC_LOAD_ENTRY 800F 	MUSIC_MUTE_ENTRY
-801E 	MUSIC_PAUSE     8012 	MUSIC_PAUSE_ENTR 800C 	MUSIC_PLAY_ENTRY
-80C4 	MUSIC_PLAY_TARGE 8036 	MUSIC_RESUME    8015 	MUSIC_RESUME_ENT
-806E 	MUSIC_STATE     804A 	MUSIC_STATUS    8018 	MUSIC_STATUS_ENT
-8115 	MUTE            0006 	NOISE           8387 	NOSIG
-8582 	NO_ENAC         8589 	NO_ENSL         8811 	NSBADD
-8811 	NSBASE          8913 	NT_             872E 	NT_DATA
-8381 	OLDPRTM         841A 	ORNPTS          85F9 	PATSPTR
-1CE8 	PAYEND          0197 	PAYLOD          8287 	PDSAM0
-828A 	PDSAM1          831F 	PDSP_           82AA 	PD_ENV
-8298 	PD_EOFF         82B4 	PD_ESAM         8322 	PD_FIN
-82CE 	PD_LOOP         82D1 	PD_LP2          82FE 	PD_NOIS
-8309 	PD_NOTE         82AF 	PD_ORN          8280 	PD_ORSM
-8303 	PD_REL          8311 	PD_RES          82A0 	PD_SORE
-828F 	PD_VOL          8615 	PL1A            8620 	PL1B
-8634 	PL1C            8648 	PL1D            864D 	PL2
-85BE 	PLAY            85EE 	PLNLP           0009 	PRINTF
-80DA 	PRIVATE_STACK_BA 810A 	PRIVATE_STACK_TO 835B 	PRNOTE
-8378 	PRSLIDE         85F2 	PSCALC          8612 	PSP_
-877E 	PT3EMPTYORN     82BF 	PT3PD           827D 	PTDECOD
-8000 	RESBAS          806F 	RESIDENT_INSTALL 808C 	RESIDENT_STOP
-86AE 	ROUT            8430 	SAMPTS          80D6 	SAVED_STACK_POIN
-80D8 	SAVED_TIKO_VECTO 83F6 	SETENV          8273 	SETMDAD
-8412 	SETORN          833D 	SETPORT         842B 	SETSAM
-8114 	SETUP           8391 	SET_STP         89D3 	SONGBG
-9B51 	SONGEN          8441 	SPCCOMS         810A 	START
-8823 	T1_             8768 	TCNW0           874A 	TCNW1
-8773 	TCNW2           875E 	TCNW3           873E 	TCOD0
-874A 	TCOD1           874C 	TCOD2           875F 	TCOD3
-823A 	TC_EXIT         80A1 	TICK_PHASE_VALUE 0017 	TIKI_SOUND_DATA
-0016 	TIKI_SOUND_SELEC 809F 	TIKO_INTERRUPT  8855 	TNEW0
-8823 	TNEW1           886D 	TNEW2           8853 	TNEW3
-8855 	TOLD0           8823 	TOLD1           883B 	TOLD2
-8853 	TOLD3           0000 	TONA            0002 	TONB
-0004 	TONC            8188 	TP_0            8194 	TP_1
-819B 	TP_2            8006 	TSR_INSTALL_ENTR 8000 	TSR_INTERRUPT_EN
-8003 	TSR_STOP_ENTRY  873E 	T_              8781 	T_PACK
-8823 	VAR0END         87B6 	VARS            89D3 	VARSEND
-8373 	VERSION         8813 	VT_
+806C 	.LOAD_RETURN    	8035 	.PAUSE_RETURN   	80AF 	.PLAY50
+8049 	.RESUME_RETURN  	809E 	.STOP_RETURN    	8689 	ADDTOEN
+8812 	ADDTONS         	85D7 	ADIPTA          	862B 	ADIPTB
+863F 	ADIPTC          	881D 	AMPL            	0008 	AMPLA
+0009 	AMPLB           	000A 	AMPLC           	8813 	AYREGS
+0005 	BDOS            	0002 	CCRAMP          	0004 	CCRENV
+0003 	CCRNOS          	0006 	CCRTON          	0014 	CENVEN
+0015 	CFLAGS          	839D 	CGLISS          	87B6 	CHANA
+87D3 	CHANB           	87F0 	CHANC           	84D2 	CHNOAC
+8547 	CHNOAM          	001D 	CHPSIZ          	8461 	CHREGS
+8476 	CH_ACTIVE       	853F 	CH_AMIN         	852D 	CH_AMP
+8550 	CH_APOS         	85A2 	CH_COUNTER      	8561 	CH_ENV
+859B 	CH_EXIT         	8597 	CH_MIX          	8568 	CH_NOEN
+849F 	CH_NOK          	8499 	CH_NTP          	85BA 	CH_ONDL
+848E 	CH_ORPS         	84BA 	CH_SMPS         	8518 	CH_STPP
+8544 	CH_SVAM         	8556 	CH_VOL          	0011 	CNNTSK
+0012 	CNOTE           	001B 	CNTSK           	000C 	COFDEL
+000B 	CONDEL          	000A 	CONOFF          	000D 	CORPTR
+8225 	CORR_1          	8233 	CORR_2          	0000 	CPSIOR
+0001 	CPSISM          	000D 	CR              	85E2 	CRPSPTR
+0013 	CSLNOT          	000F 	CSMPTR          	84E5 	CSP_
+FF16 	CTC3VEC         	FF16 	CTCVEC          	0008 	CTNACC
+0019 	CTNDEL          	0016 	CTNDLY          	0005 	CTSCNT
+0017 	CTSTEP          	8810 	CUREDEL         	880E 	CURESLD
+001C 	CVOL            	83F0 	C_DELAY         	83DE 	C_ENGLS
+8411 	C_NOP           	83C0 	C_ORPOS         	8329 	C_PORTM
+83BA 	C_SMPOS         	83C6 	C_VIBRT         	8649 	DELAY
+880D 	DELYCNT         	0100 	ENTRY           	000B 	ENV
+8821 	ENVBASE         	000D 	ENVTP           	86A5 	ENV_DEL
+86A8 	ESLDADD         	84C1 	E_              	80D4 	FAST_CHAIN_AFTER
+80AD 	FAST_CHAIN_NO_PL	83B0 	GL36            	8121 	INIT
+817A 	INITCOMMON      	8259 	INITV1          	8252 	INITV2
+81F3 	L1              	8200 	L2              	8160 	L20
+8162 	L21             	8204 	L3              	000A 	LF
+0117 	LOADIT          	8382 	LOSTEP          	85EA 	LPOSPTR
+8249 	M1              	825A 	M2              	826D 	M3
+8437 	MDAD1           	8421 	MDAD2           	89D3 	MDLADDR
+0007 	MIXER           	85FD 	MODADDR         	017B 	MSGOFF
+013B 	MSGON           	806D 	MUSIC_IDLE      	8009 	MUSIC_INITIALIZE
+804E 	MUSIC_LOAD      	801B 	MUSIC_LOAD_ENTRY 	800F 	MUSIC_MUTE_ENTRY
+801E 	MUSIC_PAUSE     	8012 	MUSIC_PAUSE_ENTR 	800C 	MUSIC_PLAY_ENTRY
+80C4 	MUSIC_PLAY_TARGE 	8036 	MUSIC_RESUME    	8015 	MUSIC_RESUME_ENT
+806E 	MUSIC_STATE     	804A 	MUSIC_STATUS    	8018 	MUSIC_STATUS_ENT
+8115 	MUTE            	0006 	NOISE           	8387 	NOSIG
+8582 	NO_ENAC         	8589 	NO_ENSL         	8811 	NSBADD
+8811 	NSBASE          	8913 	NT_             	872E 	NT_DATA
+8381 	OLDPRTM         	841A 	ORNPTS          	85F9 	PATSPTR
+1CE8 	PAYEND          	0197 	PAYLOD          	8287 	PDSAM0
+828A 	PDSAM1          	831F 	PDSP_           	82AA 	PD_ENV
+8298 	PD_EOFF         	82B4 	PD_ESAM         	8322 	PD_FIN
+82CE 	PD_LOOP         	82D1 	PD_LP2          	82FE 	PD_NOIS
+8309 	PD_NOTE         	82AF 	PD_ORN          	8280 	PD_ORSM
+8303 	PD_REL          	8311 	PD_RES          	82A0 	PD_SORE
+828F 	PD_VOL          	8615 	PL1A            	8620 	PL1B
+8634 	PL1C            	8648 	PL1D            	864D 	PL2
+85BE 	PLAY            	85EE 	PLNLP           	0009 	PRINTF
+80DA 	PRIVATE_STACK_BA	810A 	PRIVATE_STACK_TO 	835B 	PRNOTE
+8378 	PRSLIDE         	85F2 	PSCALC          	8612 	PSP_
+877E 	PT3EMPTYORN     	82BF 	PT3PD           	827D 	PTDECOD
+8000 	RESBAS          	806F 	RESIDENT_INSTALL 	808C 	RESIDENT_STOP
+86AE 	ROUT            	8430 	SAMPTS          	80D6 	SAVED_STACK_POIN
+80D8 	SAVED_TIKO_VECTO 	83F6 	SETENV          	8273 	SETMDAD
+8412 	SETORN          	833D 	SETPORT         	842B 	SETSAM
+8114 	SETUP           	8391 	SET_STP         	89D3 	SONGBG
+9B51 	SONGEN          	8441 	SPCCOMS         	810A 	START
+8823 	T1_             	8768 	TCNW0           	874A 	TCNW1
+8773 	TCNW2           	875E 	TCNW3           	873E 	TCOD0
+874A 	TCOD1           	874C 	TCOD2           	875F 	TCOD3
+823A 	TC_EXIT         	80A1 	TICK_PHASE_VALUE 	0017 	TIKI_SOUND_DATA
+0016 	TIKI_SOUND_SELEC 	809F 	TIKO_INTERRUPT  	8855 	TNEW0
+8823 	TNEW1           	886D 	TNEW2           	8853 	TNEW3
+8855 	TOLD0           	8823 	TOLD1           	883B 	TOLD2
+8853 	TOLD3           	0000 	TONA            	0002 	TONB
+0004 	TONC            	8188 	TP_0            	8194 	TP_1
+819B 	TP_2            	8006 	TSR_INSTALL_ENTR 	8000 	TSR_INTERRUPT_EN
+8003 	TSR_STOP_ENTRY  	873E 	T_              	8781 	T_PACK
+8823 	VAR0END         	87B6 	VARS            	89D3 	VARSEND
+8373 	VERSION         	8813 	VT_
 
 
 
@@ -2837,5 +2837,5 @@ No Fatal error(s)
 
 
   8853 	TNEW3
-8855 	TOLD0           8823 	TOLD1           883B 	TOLD2
+8855 	TOLD0           	8823 	TOLD1           	883B 	TOLD2
 8853 	TO
