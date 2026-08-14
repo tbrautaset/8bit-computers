@@ -1,6 +1,6 @@
                                 ;	SWEET.MAC
                                 ;
-                                ;	RESIDENT PT3 MUSIC PLAYER BY TOM BRAUTASET
+                                ;	RESIDENT PT3 MUSIC DRIVER BY TOM BRAUTASET
                                 ;
                                 ; ---------------------------------------------------------------------------
                                 ;	PURPOSE
@@ -26,38 +26,42 @@
                                 ; ---------------------------------------------------------------------------
                                 ;	TARGET AND TOOLCHAIN
                                 ;
-                                ;	Target computer  : TIKI 100
-                                ;	Operating system : TIKO
-                                ;	CPU              : Z80A, 4 MHz
-                                ;	Assembler        : Microsoft MACRO-80 (M80)
-                                ;	Linker           : Microsoft LINK-80	(L80)
+                                ;	Target computer		: (KON)TIKI 100
+                                ;	Operating system	: TIKO
+                                ;	CPU					: Z80A, 4 MHz
+                                ;	Assembler			: Microsoft MACRO-80 (M80)
+                                ;	Linker				: Microsoft LINK-80	 (L80)
                                 ;
                                 ;	Suggested TIKO build:
                                 ;
-                                ;	M80 =SWEET or M80 =SWEET/Z or M80 =SWEET/L/Z or M80 =SWEET/L
+                                ;	M80 =SWEET/L/Z
                                 ;	L80 SWEET,SWEET/N/E
                                 ; ---------------------------------------------------------------------------
-
                                 	.Z80
-                                	TITLE	SWEET - TIKI 100 RESIDENT MUSIC PLAYER
-
+                                	TITLE	SWEET - RESIDENT MUSIC PLAYER
+                                
   0000'                         	ASEG
                                 	ORG	0100H
-
+                                
   0005                          BDOS				EQU	0005H
   FF16                          CTCVEC				EQU	0FF16H
   8000                          RESBAS				EQU	8000H
   0016                          TIKI_SOUND_SELECT	EQU	16H
   0017                          TIKI_SOUND_DATA		EQU	17H
-
+                                
+                                ;	V2 named tuning constants
+  0002                          TADD	EQU	2
+  0005                          TDIV	EQU	5
+  0030                          STKSIZ	EQU	48
+                                
   000D                          CR					EQU	0DH
   000A                          LF					EQU	0AH
   0009                          PRINTF				EQU	9
-
+                                
                                 ; ---------------------------------------------------------------------------
                                 ;	TRANSIENT TIKO LOADER
                                 ; ---------------------------------------------------------------------------
-
+                                
   0100                          ENTRY:
                                 	;	If FF16H already points at 8000H, this run means stop/uninstall.
   0100    2A FF16               	LD	HL,(CTCVEC)
@@ -65,77 +69,85 @@
   0106    B7                    	OR	A
   0107    ED 52                 	SBC	HL,DE
   0109    20 0C                 	JR	NZ,LOADIT
-
+                                
   010B    CD 8003               	CALL	TSR_STOP_ENTRY
-  010E    11 017B               	LD	DE,MSGOFF
+  010E    11 0182               	LD	DE,MSGOFF
   0111    0E 09                 	LD	C,PRINTF
   0113    CD 0005               	CALL	BDOS
   0116    C9                    	RET
-
+                                
   0117                          LOADIT:
-  0117    F3                    	DI
-
+                                	;	V2: remember caller IFF2 before entering the critical install section.
+  0117    ED 57                 	LD	A,I
+  0119    F5                    	PUSH	AF
+  011A    F3                    	DI
+                                
                                 	;	Preserve original TIKO CTC3 vector across the copy.
-  0118    2A FF16               	LD	HL,(CTCVEC)
-  011B    E5                    	PUSH	HL
-
+  011B    2A FF16               	LD	HL,(CTCVEC)
+  011E    E5                    	PUSH	HL
+                                
                                 	;	Copy the complete phased resident image to its runtime address.
-  011C    21 0197               	LD	HL,PAYLOD
-  011F    11 8000               	LD	DE,RESBAS
-  0122    01 1B51               	LD	BC,PAYEND-PAYLOD
-  0125    ED B0                 	LDIR
-
+  011F    21 019E               	LD	HL,PAYLOD
+  0122    11 8000               	LD	DE,RESBAS
+  0125    01 1B51               	LD	BC,PAYEND-PAYLOD
+  0128    ED B0                 	LDIR
+                                
                                 	;	Initialize resident wrapper with original vector in HL.
-  0127    E1                    	POP	HL
-  0128    CD 8006               	CALL	TSR_INSTALL_ENTRY
-
+  012A    E1                    	POP	HL
+  012B    CD 8006               	CALL	TSR_INSTALL_ENTRY
+                                
                                 	;	Hook only after music player initialization has completed.
-  012B    21 8000               	LD	HL,TSR_INTERRUPT_ENTRY
-  012E    22 FF16               	LD	(CTCVEC),HL
-  0131    FB                    	EI
-
-  0132    11 013B               	LD	DE,MSGON
-  0135    0E 09                 	LD	C,PRINTF
-  0137    CD 0005               	CALL	BDOS
-  013A    C9                    	RET
-
+  012E    21 8000               	LD	HL,TSR_INTERRUPT_ENTRY
+  0131    22 FF16               	LD	(CTCVEC),HL
+                                	;	Restore caller interrupt state captured by LD A,I.
+  0134    F1                    	POP	AF
+  0135    E2 0139               	JP	PO,V2NOEI
+  0138    FB                    	EI
+  0139                          V2NOEI:
+                                
+  0139    11 0142               	LD	DE,MSGON
+  013C    0E 09                 	LD	C,PRINTF
+  013E    CD 0005               	CALL	BDOS
+  0141    C9                    	RET
+                                
                                 	;	Since this program was created for a Norwegian 8-bit computer,
                                 	;	the screen output uses the TIKI 100 character set:
                                 	;	"|" represents "ø" and "}" represents "å".
-  013B                          MSGON:
-  013B    0D 0A 53 77           	DB	CR,LF,"Sweet Dreams spiller.",CR,LF
-  013F    65 65 74 20
-  0143    44 72 65 61
-  0147    6D 73 20 73
-  014B    70 69 6C 6C
-  014F    65 72 2E 0D
-  0153    0A
-  0154    4B 6A 7C 72           	DB	"Kj|r SWEET en gang til for } stoppe.",CR,LF,"$"
-  0158    20 53 57 45
-  015C    45 54 20 65
-  0160    6E 20 67 61
-  0164    6E 67 20 74
-  0168    69 6C 20 66
-  016C    6F 72 20 7D
-  0170    20 73 74 6F
-  0174    70 70 65 2E
-  0178    0D 0A 24
-  017B                          MSGOFF:
-  017B    0D 0A 53 77           	DB	CR,LF,"Sweet Dreams avsluttet.",CR,LF,"$"
-  017F    65 65 74 20
-  0183    44 72 65 61
-  0187    6D 73 20 61
-  018B    76 73 6C 75
-  018F    74 74 65 74
-  0193    2E 0D 0A 24
-
+  0142                          MSGON:
+  0142    0D 0A 53 77           	DB	CR,LF,"Sweet Dreams spiller.",CR,LF
+  0146    65 65 74 20           
+  014A    44 72 65 61           
+  014E    6D 73 20 73           
+  0152    70 69 6C 6C           
+  0156    65 72 2E 0D           
+  015A    0A                    
+  015B    4B 6A 7C 72           	DB	"Kj|r SWEET en gang til for } stoppe.",CR,LF,"$"
+  015F    20 53 57 45           
+  0163    45 54 20 65           
+  0167    6E 20 67 61           
+  016B    6E 67 20 74           
+  016F    69 6C 20 66           
+  0173    6F 72 20 7D           
+  0177    20 73 74 6F           
+  017B    70 70 65 2E           
+  017F    0D 0A 24              
+                                
+  0182                          MSGOFF:
+  0182    0D 0A 53 77           	DB	CR,LF,"Sweet Dreams avsluttet.",CR,LF,"$"
+  0186    65 65 74 20           
+  018A    44 72 65 61           
+  018E    6D 73 20 61           
+  0192    76 73 6C 75           
+  0196    74 74 65 74           
+  019A    2E 0D 0A 24           
+                                
                                 ; ---------------------------------------------------------------------------
                                 ;	RESIDENT IMAGE
                                 ; ---------------------------------------------------------------------------
-
-  0197                          PAYLOD:
+                                
+  019E                          PAYLOD:
                                 	.PHASE	8000H
-
+                                
                                 ; ---------------------------------------------------------------------------
                                 ;	RESIDENT TSR WRAPPER FOR TIKI 100 / TIKO
                                 ;
@@ -156,9 +168,9 @@
                                 ;	8018H = status: A=0 playing, A=1 paused
                                 ;	801BH = load/start PT3 module at HL; module must remain resident
                                 ; ---------------------------------------------------------------------------
-
+                                
   FF16                          CTC3VEC	EQU	0FF16H
-
+                                
   8000                          TSR_INTERRUPT_ENTRY:
   8000    C3 809F               	JP	TIKO_INTERRUPT	;	8000H
   8003                          TSR_STOP_ENTRY:
@@ -179,7 +191,7 @@
   8018    C3 804A               	JP	MUSIC_STATUS	;	8018H
   801B                          MUSIC_LOAD_ENTRY:
   801B    C3 804E               	JP	MUSIC_LOAD	;	801BH
-
+                                
                                 ;	Background-music control routines.
                                 ;
                                 ;	Pause/resume patch the 50 Hz CALL target.	Normal playback therefore pays
@@ -198,7 +210,7 @@
   8034    FB                    	EI
   8035                          .PAUSE_RETURN:
   8035    C9                    	RET
-
+                                
   8036                          MUSIC_RESUME:
   8036    ED 57                 	LD	A,I	;	preserve caller interrupt state
   8038    F5                    	PUSH	AF
@@ -212,11 +224,11 @@
   8048    FB                    	EI
   8049                          .RESUME_RETURN:
   8049    C9                    	RET
-
+                                
   804A                          MUSIC_STATUS:
   804A    3A 806E               	LD	A,(MUSIC_STATE)
   804D    C9                    	RET
-
+                                
                                 ;	HL points to a PT3 module that must remain resident while it is playing.
   804E                          MUSIC_LOAD:
   804E    ED 57                 	LD	A,I	;	preserve caller interrupt state
@@ -236,13 +248,13 @@
   806B    FB                    	EI
   806C                          .LOAD_RETURN:
   806C    C9                    	RET
-
+                                
   806D                          MUSIC_IDLE:
   806D    C9                    	RET
-
+                                
   806E                          MUSIC_STATE:
   806E    00                    	DB	0
-
+                                
                                 ;	Called by the transient .COM loader after copying us to 8000H.
                                 ;	HL contains the original TIKO FF16 vector.
   806F                          RESIDENT_INSTALL:
@@ -257,7 +269,7 @@
   8085    22 80C4               	LD	(MUSIC_PLAY_TARGET),HL
   8088    CD 810A               	CALL	START
   808B    C9                    	RET
-
+                                
                                 ;	Uninstall safely, restore TIKO vector, and silence AY.
   808C                          RESIDENT_STOP:
   808C    ED 57                 	LD	A,I	;	preserve caller interrupt state
@@ -271,7 +283,7 @@
   809D    FB                    	EI
   809E                          .STOP_RETURN:
   809E    C9                    	RET
-
+                                
                                 ;	TIKO CTC3 interrupt hook - TIKI 100 resident path.
                                 ;
                                 ;	The 125 Hz scheduler touches only AF.	On the three interrupts out of five
@@ -285,22 +297,22 @@
                                 ;	its register usage before changing this save set.
   809F                          TIKO_INTERRUPT:
   809F    F5                    	PUSH	AF
-
+                                
                                 ;	125 Hz -> 50 Hz: phase += 2, fire when phase >= 5.
   80A1                          TICK_PHASE_VALUE	EQU	$+1
   80A0    3E 00                 	LD	A,0
-  80A2    C6 02                 	ADD	A,2
-  80A4    FE 05                 	CP	5
+  80A2    C6 02                 	ADD	A,TADD
+  80A4    FE 05                 	CP	TDIV
   80A6    30 07                 	JR	NC,.PLAY50
   80A8    32 80A1               	LD	(TICK_PHASE_VALUE),A
   80AB    F1                    	POP	AF
   80AD                          FAST_CHAIN_NO_PLAY	EQU	$+1
   80AC    C3 0000               	JP	0000H	;	patched with original TIKO handler
-
+                                
   80AF                          .PLAY50:
-  80AF    D6 05                 	SUB	5
+  80AF    D6 05                 	SUB	TDIV
   80B1    32 80A1               	LD	(TICK_PHASE_VALUE),A
-
+                                
                                 	;	AF remains safely stored on the interrupted program's stack.
                                 	;	Everything else used by PLAY is saved on our private resident stack.
   80B4    ED 73 80D6            	LD	(SAVED_STACK_POINTER),SP
@@ -325,20 +337,20 @@
   80D2    F1                    	POP	AF
   80D4                          FAST_CHAIN_AFTER_PLAY	EQU	$+1
   80D3    C3 0000               	JP	0000H	;	patched with original TIKO handler
-
+                                
   80D6                          SAVED_STACK_POINTER:
   80D6    0000                  		DW	0
-
+                                
   80D8                          SAVED_TIKO_VECTOR:
   80D8    0000                  		DW	0
-
+                                
                                 	;	48-byte private music stack.
                                 	;	Full-song profiling measured a 0010H (16-byte) high-water mark.
                                 	;	48 bytes keeps a 3x measured safety margin.
   80DA                          PRIVATE_STACK_BASE:
-  80DA                          		DS	48
+  80DA                          		DS	STKSIZ
   810A                          PRIVATE_STACK_TOP:
-
+                                
   0000                          TonA	EQU 0
   0002                          TonB	EQU 2
   0004                          TonC	EQU 4
@@ -349,7 +361,7 @@
   000A                          AmplC	EQU 10
   000B                          Env		EQU 11
   000D                          EnvTp	EQU 13
-
+                                
                                 ; ---------------------------------------------------------------------------
                                 ;	PT3 PLAYER CORE
                                 ;
@@ -364,16 +376,16 @@
                                 ;	PLAY	decode and output one music frame
                                 ;	MUTE	silence the AY-3-8912
                                 ; ---------------------------------------------------------------------------
-
+                                
   810A                          START:
   810A    21 89D3               	LD HL,MDLADDR
   810D    18 12                 	JR INIT
   810F    C3 85BE               	JP PLAY
   8112    18 01                 	JR MUTE
-
+                                
   8114                          SETUP:
   8114    00                    	DB	0	;	TIKI 100 fixed mode: PT3, ABC, looping enabled
-
+                                
   8115                          MUTE:
   8115    AF                    	XOR A
   8116    67                    	LD H,A
@@ -381,7 +393,7 @@
   8118    32 881B               	LD (AYREGS+AmplA),A
   811B    22 881C               	LD (AYREGS+AmplB),HL
   811E    C3 86AE               	JP ROUT
-
+                                
   8121                          INIT:
                                 ;	HL - AddressOfModule
   8121    CD 8273               	CALL SETMDAD
@@ -414,10 +426,10 @@
   815A    38 04                 	JR C,L20
   815C    FE 0A                 	CP 10
   815E    38 02                 	JR C,L21
-
+                                
   8160                          L20:
   8160    3E 06                 	LD A,6
-
+                                
   8162                          L21:
   8162    32 8373               	LD (Version),A
   8165    F5                    	PUSH AF	;	VolTable version
@@ -430,17 +442,17 @@
   8172    21 0000               	LD HL,0
   8175    11 877E               	LD DE,PT3EMPTYORN
   8178    18 00                 	JR INITCOMMON
-
+                                
   817A                          INITCOMMON:
   817A    ED 43 827E            	LD (PTDECOD+1),BC
   817E    22 85F2               	LD (PsCalc),HL
   8181    D5                    	PUSH DE
-
+                                
                                 ;	note table data depacker
                                 ;	(c) Ivan Roshin
   8182    11 8781               	LD DE,T_PACK
   8185    01 8884               	LD BC,T1_+(2*49)-1
-
+                                
   8188                          TP_0:
   8188    1A                    	LD A,(DE)
   8189    13                    	INC DE
@@ -451,7 +463,7 @@
   8190    6F                    	LD L,A
   8191    13                    	INC DE
   8192    18 07                 	JR TP_2
-
+                                
   8194                          TP_1:
   8194    D5                    	PUSH DE
   8195    16 00                 	LD D,0
@@ -459,7 +471,7 @@
   8198    19                    	ADD HL,DE
   8199    19                    	ADD HL,DE
   819A    D1                    	POP DE
-
+                                
   819B                          TP_2:
   819B    7C                    	LD A,H
   819C    02                    	LD (BC),A
@@ -486,7 +498,7 @@
   81C8    22 87E0               	LD (ChanB+CORPTR),HL
   81CB    22 87FD               	LD (ChanC+CORPTR),HL
   81CE    F1                    	POP AF
-
+                                
                                 ;	NoteTableCreator (c) Ivan Roshin
                                 ;	A - NoteTableNumber*2+VersionForNoteTable
                                 ;	(xx1b - 3.xx..3.4r, xx0b - 3.4x..3.6x..VTII1.0)
@@ -515,7 +527,7 @@
   81ED    11 8913               	LD DE,NT_
   81F0    D5                    	PUSH DE
   81F1    06 0C                 	LD B,12
-
+                                
   81F3                          L1:
   81F3    C5                    	PUSH BC
   81F4    4E                    	LD C,(HL)
@@ -526,11 +538,11 @@
   81F9    EB                    	EX DE,HL
   81FA    11 0017               	LD DE,23
   81FD    DD 26 08              	DB	0DDH,026H,08H
-
+                                
   8200                          L2:
   8200    CB 38                 	SRL B
   8202    CB 19                 	RR C
-
+                                
   8204                          L3:
   8204    19                    	DB 19H	;	AND A or NOP
   8205    79                    	LD A,C
@@ -557,6 +569,7 @@
   821E    20 05                 	JR NZ,CORR_1
   8220    3E FD                 	LD A,0FDH
   8222    32 8941               	LD (NT_+2EH),A
+                                
   8225                          CORR_1:
   8225    1A                    	LD A,(DE)
   8226    A7                    	AND A
@@ -570,17 +583,17 @@
   822F    30 02                 	JR NC,CORR_2
   8231    35                    	DEC (HL)
   8232    35                    	DEC (HL)
-
+                                
   8233                          CORR_2:
   8233    34                    	INC (HL)
   8234    A7                    	AND A
   8235    ED 42                 	SBC HL,BC
   8237    13                    	INC DE
   8238    18 EB                 	JR CORR_1
-
+                                
   823A                          TC_EXIT:
   823A    F1                    	POP AF
-
+                                
                                 ;	VolTableCreator (c) Ivan Roshin
                                 ;	A - VersionForVolumeTable (0..4 - 3.xx..3.4x;
                                 							;	5.. - 2.x,3.5x..3.6x..VTII1.0)
@@ -593,22 +606,22 @@
   8246    2D                    	DEC L
   8247    5D                    	LD E,L
   8248    AF                    	XOR A
-
+                                
   8249                          M1:
   8249    32 825A               	LD (M2),A
   824C    DD 21 8823            	LD IX,VT_+16
   8250    0E 0F                 	LD C,0FH
-
+                                
   8252                          INITV2:
   8252    E5                    	PUSH HL
   8253    19                    	ADD HL,DE
   8254    EB                    	EX DE,HL
   8255    ED 62                 	SBC HL,HL
   8257    06 10                 	LD B,10H
-
+                                
   8259                          INITV1:
   8259    7D                    	LD A,L
-
+                                
   825A                          M2:
   825A    7D                    	DB 7DH
   825B    7C                    	LD A,H
@@ -622,35 +635,35 @@
   8268    FE 77                 	CP 77H
   826A    20 01                 	JR NZ,M3
   826C    1C                    	INC E
-
+                                
   826D                          M3:
   826D    0D                    	DEC C
   826E    20 E2                 	JR NZ,INITV2
   8270    C3 86AE               	JP ROUT
-
+                                
   8273                          SETMDAD:
   8273    22 85FD               	LD (MODADDR),HL
   8276    22 8437               	LD (MDAD1),HL
   8279    22 8421               	LD (MDAD2),HL
   827C    C9                    	RET
-
+                                
   827D                          PTDECOD:
   827D    C3 C3C3               	JP 0C3C3H
-
+                                
                                 ;	PT3 pattern decoder
   8280                          PD_OrSm:
   8280    DD 36 08 00           	LD (IX-12+CENVEN),0
   8284    CD 8412               	CALL SETORN
-
+                                
   8287                          PDSAM0:
   8287    0A                    	LD A,(BC)
   8288    03                    	INC BC
   8289    0F                    	RRCA
-
+                                
   828A                          PDSAM1:
   828A    CD 842B               	CALL SETSAM
   828D    18 3F                 	JR PD_LOOP
-
+                                
   828F                          PD_VOL:
   828F    0F                    	RRCA
   8290    0F                    	RRCA
@@ -658,12 +671,12 @@
   8292    0F                    	RRCA
   8293    DD 77 10              	LD (IX-12+CVOL),A
   8296    18 39                 	JR PD_LP2
-
+                                
   8298                          PD_EOff:
   8298    DD 77 08              	LD (IX-12+CENVEN),A
   829B    DD 77 F4              	LD (IX-12+CPSIOR),A
   829E    18 31                 	JR PD_LP2
-
+                                
   82A0                          PD_SorE:
   82A0    3D                    	DEC A
   82A1    20 07                 	JR NZ,PD_ENV
@@ -671,31 +684,31 @@
   82A4    03                    	INC BC
   82A5    DD 77 05              	LD (IX-12+CNNTSK),A
   82A8    18 27                 	JR PD_LP2
-
+                                
   82AA                          PD_ENV:
   82AA    CD 83F6               	CALL SETENV
   82AD    18 22                 	JR PD_LP2
-
+                                
   82AF                          PD_ORN:
   82AF    CD 8412               	CALL SETORN
   82B2    18 1A                 	JR PD_LOOP
-
+                                
   82B4                          PD_ESAM:
   82B4    DD 77 08              	LD (IX-12+CENVEN),A
   82B7    DD 77 F4              	LD (IX-12+CPSIOR),A
   82BA    C4 83F6               	CALL NZ,SETENV
   82BD    18 C8                 	JR PDSAM0
-
+                                
   82BF                          PT3PD:
   82BF    DD 7E 06              	LD A,(IX-12+CNOTE)
   82C2    32 835C               	LD (PrNote+1),A
   82C5    DD 6E FA              	LD L,(IX-12+CCRTON)
   82C8    DD 66 FB              	LD H,(IX-12+CCRTON+1)
   82CB    22 8379               	LD (PrSlide+1),HL
-
+                                
   82CE                          PD_LOOP:
   82CE    11 2010               	LD DE,2010H
-
+                                
   82D1                          PD_LP2:
   82D1    0A                    	LD A,(BC)
   82D2    03                    	INC BC
@@ -727,20 +740,20 @@
   82FA    56                    	LD D,(HL)
   82FB    D5                    	PUSH DE
   82FC    18 D0                 	JR PD_LOOP
-
+                                
   82FE                          PD_NOIS:
   82FE    32 8811               	LD (NSBASE),A
   8301    18 CE                 	JR PD_LP2
-
+                                
   8303                          PD_REL:
   8303    DD CB 09 86           	RES 0,(IX-12+CFLAGS)
   8307    18 08                 	JR PD_RES
-
+                                
   8309                          PD_NOTE:
   8309    DD 77 06              	LD (IX-12+CNOTE),A
   830C    DD CB 09 C6           	SET 0,(IX-12+CFLAGS)
   8310    AF                    	XOR A
-
+                                
   8311                          PD_RES:
   8311    ED 73 8320            	LD (PDSP_+1),SP
   8315    DD F9                 	LD SP,IX
@@ -752,19 +765,19 @@
   831C    E5                    	PUSH HL
   831D    E5                    	PUSH HL
   831E    E5                    	PUSH HL
-
+                                
   831F                          PDSP_:
   831F    31 3131               	LD SP,3131H
-
+                                
   8322                          PD_FIN:
   8322    DD 7E 05              	LD A,(IX-12+CNNTSK)
   8325    DD 77 0F              	LD (IX-12+CNTSK),A
   8328    C9                    	RET
-
+                                
   8329                          C_PORTM:
   8329    0A                    	LD A,(BC)
   832A    03                    	INC BC
-
+                                
                                 ;	SKIP PRECALCULATED TONE DELTA (BECAUSE
                                 ;	CANNOT BE RIGHT AFTER PT3 COMPILATION)
   832B    03                    	INC BC
@@ -779,11 +792,11 @@
   8336    08                    	EX AF,AF'
   8337    DD 6E FA              	LD L,(IX-12+CCRTON)
   833A    DD 66 FB              	LD H,(IX-12+CCRTON+1)
-
+                                
                                 ;	Set portamento variables
                                 ;	A - Delay; A' - Hi(Step)
                                 ;	ZF' - (A'=0); HL - CrTnSl
-
+                                
   833D                          SETPORT:
   833D    DD CB 09 96           	RES 2,(IX-12+CFLAGS)
   8341    DD 77 0A              	LD (IX-12+CTNDLY),A
@@ -801,7 +814,7 @@
   8358    66                    	LD H,(HL)
   8359    6F                    	LD L,A
   835A    E5                    	PUSH HL
-
+                                
   835B                          PrNote:
   835B    3E 3E                 	LD A,3EH
   835D    DD 77 06              	LD (IX-12+CNOTE),A
@@ -821,19 +834,19 @@
   8372    3E 3E                 	LD A,3EH
   8374    FE 06                 	CP 6
   8376    38 09                 	JR C,OLDPRTM	;	Old 3xxx for PT v3.5-
-
+                                
   8378                          PrSlide:
   8378    11 1111               	LD DE,1111H
   837B    DD 73 FA              	LD (IX-12+CCRTON),E
   837E    DD 72 FB              	LD (IX-12+CCRTON+1),D
   8382                          	LoStep	EQU $+1
-
+                                
   8381                          OLDPRTM:
   8381    3E 3E                 	LD A,3EH
   8383    08                    	EX AF,AF'
   8384    28 01                 	JR Z,NOSIG
   8386    EB                    	EX DE,HL
-
+                                
   8387                          NOSIG:
   8387    ED 52                 	SBC HL,DE
   8389    F2 8391               	JP P,SET_STP
@@ -841,14 +854,14 @@
   838D    08                    	EX AF,AF'
   838E    ED 44                 	NEG
   8390    08                    	EX AF,AF'
-
+                                
   8391                          SET_STP:
   8391    DD 77 0C              	LD (IX-12+CTSTEP+1),A
   8394    08                    	EX AF,AF'
   8395    DD 77 0B              	LD (IX-12+CTSTEP),A
   8398    DD 36 FE 00           	LD (IX-12+CONOFF),0
   839C    C9                    	RET
-
+                                
   839D                          CGLISS:
   839D    DD CB 09 D6           	SET	2,(IX-12+CFLAGS)
   83A1    0A                    	LD A,(BC)
@@ -860,7 +873,7 @@
   83AC    FE 07                 	CP 7
   83AE    9F                    	SBC A,A
   83AF    3C                    	INC A
-
+                                
   83B0                          GL36:
   83B0    DD 77 F9              	LD (IX-12+CTSCNT),A
   83B3    0A                    	LD A,(BC)
@@ -869,19 +882,19 @@
   83B6    0A                    	LD A,(BC)
   83B7    03                    	INC BC
   83B8    18 D7                 	JR SET_STP
-
+                                
   83BA                          C_SMPOS:
   83BA    0A                    	LD A,(BC)
   83BB    03                    	INC BC
   83BC    DD 77 F5              	LD (IX-12+CPSISM),A
   83BF    C9                    	RET
-
+                                
   83C0                          C_ORPOS:
   83C0    0A                    	LD A,(BC)
   83C1    03                    	INC BC
   83C2    DD 77 F4              	LD (IX-12+CPSIOR),A
   83C5    C9                    	RET
-
+                                
   83C6                          C_VIBRT:
   83C6    0A                    	LD A,(BC)
   83C7    03                    	INC BC
@@ -895,7 +908,7 @@
   83D7    DD 77 FA              	LD (IX-12+CCRTON),A
   83DA    DD 77 FB              	LD (IX-12+CCRTON+1),A
   83DD    C9                    	RET
-
+                                
   83DE                          C_ENGLS:
   83DE    0A                    	LD A,(BC)
   83DF    03                    	INC BC
@@ -909,13 +922,13 @@
   83EB    67                    	LD H,A
   83EC    22 86A8               	LD (ESldAdd),HL
   83EF    C9                    	RET
-
+                                
   83F0                          C_DELAY:
   83F0    0A                    	LD A,(BC)
   83F1    03                    	INC BC
   83F2    32 8649               	LD (Delay),A
   83F5    C9                    	RET
-
+                                
   83F6                          SETENV:
   83F6    DD 73 08              	LD (IX-12+CENVEN),E
   83F9    32 8820               	LD (AYREGS+EnvTp),A
@@ -932,10 +945,10 @@
   840C    67                    	LD H,A
   840D    6F                    	LD L,A
   840E    22 880E               	LD (CurESld),HL
-
+                                
   8411                          C_NOP:
   8411    C9                    	RET
-
+                                
   8412                          SETORN:
   8412    87                    	ADD A,A
   8413    5F                    	LD E,A
@@ -953,7 +966,7 @@
   8424    DD 75 01              	LD (IX-12+CORPTR),L
   8427    DD 74 02              	LD (IX-12+CORPTR+1),H
   842A    C9                    	RET
-
+                                
   842B                          SETSAM:
   842B    87                    	ADD A,A
   842C    5F                    	LD E,A
@@ -970,7 +983,7 @@
   843A    DD 75 03              	LD (IX-12+CSMPTR),L
   843D    DD 74 04              	LD (IX-12+CSMPTR+1),H
   8440    C9                    	RET
-
+                                
                                 ;	ALL 16 ADDRESSES TO PROTECT FROM BROKEN PT3 MODULES
   8441                          SPCCOMS:
   8441    8411                  	DW C_NOP
@@ -989,7 +1002,7 @@
   845B    8411                  	DW C_NOP
   845D    8411                  	DW C_NOP
   845F    8411                  	DW C_NOP
-
+                                
   8461                          CHREGS:
   8461    AF                    	XOR A
   8462    32 881D               	LD (Ampl),A
@@ -1000,7 +1013,7 @@
   846F    0F                    	RRCA
   8470    32 881A               	LD (AYREGS+Mixer),A
   8473    C3 85A2               	JP CH_COUNTER
-
+                                
   8476                          CH_ACTIVE:
   8476    E5                    	PUSH HL
   8477    ED 73 84E6            	LD (CSP_+1),SP
@@ -1016,19 +1029,19 @@
   848A    BA                    	CP	D
   848B    38 01                 	JR	C,CH_ORPS
   848D    7B                    	LD	A,E
-
+                                
   848E                          CH_ORPS:
   848E    DD 77 00              	LD (IX+CPSIOR),A
   8491    DD 7E 12              	LD A,(IX+CNOTE)
   8494    86                    	ADD A,(HL)
   8495    F2 8499               	JP P,CH_NTP
   8498    AF                    	XOR A
-
+                                
   8499                          CH_NTP:
   8499    FE 60                 	CP 96
   849B    38 02                 	JR C,CH_NOK
   849D    3E 5F                 	LD A,95
-
+                                
   849F                          CH_NOK:
   849F    87                    	ADD A,A
   84A0    08                    	EX AF,AF'
@@ -1049,13 +1062,13 @@
   84B6    BA                    	CP	D
   84B7    38 01                 	JR	C,CH_SMPS
   84B9    7B                    	LD	A,E
-
+                                
   84BA                          CH_SMPS:
   84BA    DD 77 01              	LD (IX+CPSISM),A
   84BD    C1                    	POP BC
   84BE    E1                    	POP HL
   84BF    18 00                 	JR	e_
-
+                                
   84C1                          e_:
   84C1    DD 5E 08              	LD E,(IX+CTNACC)
   84C4    DD 56 09              	LD D,(IX+CTNACC+1)
@@ -1064,7 +1077,7 @@
   84CA    28 06                 	JR Z,CHNOAC
   84CC    DD 75 08              	LD (IX+CTNACC),L
   84CF    DD 74 09              	LD (IX+CTNACC+1),H
-
+                                
   84D2                          CHNOAC:
   84D2    EB                    	EX DE,HL
   84D3    08                    	EX AF,AF'
@@ -1079,7 +1092,7 @@
   84DE    DD 5E 06              	LD E,(IX+CCRTON)
   84E1    DD 56 07              	LD D,(IX+CCRTON+1)
   84E4    19                    	ADD HL,DE
-
+                                
   84E5                          CSP_:
   84E5    31 3131               	LD SP,3131H
   84E8    E3                    	EX (SP),HL
@@ -1103,7 +1116,7 @@
   8514    A7                    	AND A
   8515    28 01                 	JR Z,CH_STPP
   8517    EB                    	EX DE,HL
-
+                                
   8518                          CH_STPP:
   8518    ED 52                 	SBC HL,DE
   851A    FA 852D               	JP M,CH_AMP
@@ -1113,7 +1126,7 @@
   8524    DD 77 05              	LD (IX+CTSCNT),A
   8527    DD 77 06              	LD (IX+CCRTON),A
   852A    DD 77 07              	LD (IX+CCRTON+1),A
-
+                                
   852D                          CH_AMP:
   852D    DD 7E 02              	LD A,(IX+CCRAMP)
   8530    CB 79                 	BIT 7,C
@@ -1124,15 +1137,15 @@
   853A    28 0B                 	JR Z,CHNOAM
   853C    3C                    	INC A
   853D    18 05                 	JR CH_SVAM
-
+                                
   853F                          CH_AMIN:
   853F    FE F1                 	CP -15
   8541    28 04                 	JR Z,CHNOAM
   8543    3D                    	DEC A
-
+                                
   8544                          CH_SVAM:
   8544    DD 77 02              	LD (IX+CCRAMP),A
-
+                                
   8547                          CHNOAM:
   8547    6F                    	LD L,A
   8548    78                    	LD A,B
@@ -1140,12 +1153,12 @@
   854B    85                    	ADD A,L
   854C    F2 8550               	JP P,CH_APOS
   854F    AF                    	XOR A
-
+                                
   8550                          CH_APOS:
   8550    FE 10                 	CP 16
   8552    38 02                 	JR C,CH_VOL
   8554    3E 0F                 	LD A,15
-
+                                
   8556                          CH_VOL:
   8556    DD B6 1C              	OR (IX+CVOL)
   8559    C6 13                 	ADD A,LOW VT_
@@ -1154,12 +1167,12 @@
   855E    95                    	SUB L
   855F    67                    	LD H,A
   8560    7E                    	LD A,(HL)
-
+                                
   8561                          CH_ENV:
   8561    CB 41                 	BIT 0,C
   8563    20 03                 	JR NZ,CH_NOEN
   8565    DD B6 14              	OR (IX+CENVEN)
-
+                                
   8568                          CH_NOEN:
   8568    32 881D               	LD (Ampl),A
   856B    CB 78                 	BIT 7,B
@@ -1174,13 +1187,13 @@
   857B    CB 68                 	BIT 5,B
   857D    28 03                 	JR Z,NO_ENAC
   857F    DD 77 04              	LD (IX+CCRENV),A
-
+                                
   8582                          NO_ENAC:
   8582    21 8689               	LD HL,AddToEn
   8585    86                    	ADD A,(HL)	;	BUG IN PT3 - NEED WORD HERE
   8586    77                    	LD (HL),A
   8587    18 0E                 	JR CH_MIX
-
+                                
   8589                          NO_ENSL:
   8589    1F                    	RRA
   858A    DD 86 03              	ADD A,(IX+CCRNOS)
@@ -1188,19 +1201,19 @@
   8590    CB 68                 	BIT 5,B
   8592    28 03                 	JR Z,CH_MIX
   8594    DD 77 03              	LD (IX+CCRNOS),A
-
+                                
   8597                          CH_MIX:
   8597    78                    	LD A,B
   8598    1F                    	RRA
   8599    E6 48                 	AND 48H
-
+                                
   859B                          CH_EXIT:
   859B    21 881A               	LD HL,AYREGS+Mixer
   859E    B6                    	OR (HL)
   859F    0F                    	RRCA
   85A0    77                    	LD (HL),A
   85A1    E1                    	POP HL
-
+                                
   85A2                          CH_COUNTER:
   85A2    AF                    	XOR A
   85A3    DD B6 0A              	OR (IX+CONOFF)
@@ -1213,11 +1226,11 @@
   85B2    DD 7E 0B              	LD A,(IX+CONDEL)
   85B5    38 03                 	JR C,CH_ONDL
   85B7    DD 7E 0C              	LD A,(IX+COFDEL)
-
+                                
   85BA                          CH_ONDL:
   85BA    DD 77 0A              	LD (IX+CONOFF),A
   85BD    C9                    	RET
-
+                                
   85BE                          PLAY:
   85BE    AF                    	XOR A
   85BF    32 8689               	LD (AddToEn),A
@@ -1247,11 +1260,11 @@
   85E9    21 2121               	LD HL,2121H
   85EC    7E                    	LD A,(HL)
   85ED    3C                    	INC A
-
+                                
   85EE                          PLNLP:
   85EE    22 85E2               	LD (CrPsPtr),HL
   85F1    3D                    	DEC A
-
+                                
   85F2                          PsCalc:
   85F2    3D                    	DEC A	;	ADD A,A	NOP
   85F3    3D                    	DEC A	;	ADD A,(HL)	NOP
@@ -1275,15 +1288,15 @@
   860D    E1                    	POP HL
   860E    19                    	ADD HL,DE
   860F    22 863F               	LD (ADIPTC),HL
-
+                                
   8612                          PSP_:
   8612    31 3131               	LD SP,3131H
-
+                                
   8615                          PL1A:
   8615    DD 21 87C2            	LD IX,ChanA+12
   8619    CD 827D               	CALL PTDECOD
   861C    ED 43 85D7            	LD (ADIPTA),BC
-
+                                
   8620                          PL1B:
   8620    21 87EE               	LD HL,ChanB+CNTSK
   8623    35                    	DEC (HL)
@@ -1293,7 +1306,7 @@
   862A    01 0101               	LD BC,0101H
   862D    CD 827D               	CALL PTDECOD
   8630    ED 43 862B            	LD (ADIPTB),BC
-
+                                
   8634                          PL1C:
   8634    21 880B               	LD HL,ChanC+CNTSK
   8637    35                    	DEC (HL)
@@ -1304,11 +1317,11 @@
   8641    CD 827D               	CALL PTDECOD
   8644    ED 43 863F            	LD (ADIPTC),BC
   8649                          	Delay	EQU $+1
-
+                                
   8648                          PL1D:
   8648    3E 3E                 	LD A,3EH
   864A    32 880D               	LD (DelyCnt),A
-
+                                
   864D                          PL2:
   864D    DD 21 87B6            	LD IX,ChanA
   8651    2A 8813               	LD HL,(AYREGS+TonA)
@@ -1354,9 +1367,9 @@
   86A7    21 2121               	LD HL,2121H
   86AA    19                    	ADD HL,DE
   86AB    22 880E               	LD (CurESld),HL
-
+                                
   86AE                          ROUT:
-                                	;	TIKI 100 AY-3-8912 fixed-port writer.
+                                	;	AY-3-8912 fixed-port writer.
                                 	;	Direct AYREGS loads save 10 T-states/frame versus an HL walk.
   86AE    AF                    	XOR	A
   86AF    D3 16                 	OUT	(TIKI_SOUND_SELECT),A
@@ -1417,7 +1430,7 @@
   872A    F8                    	RET	M
   872B    D3 17                 	OUT	(TIKI_SOUND_DATA),A
   872D    C9                    	RET
-
+                                
   872E                          NT_DATA:
   872E    64                    	DB (TNEW0-T1_)*2
   872F    2A                    	DB TCNW0-T_
@@ -1435,45 +1448,45 @@
   873B    20                    	DB TCNW3-T_
   873C    60                    	DB (TOLD3-T1_)*2
   873D    21                    	DB TCOD3-T_
-
+                                
   873E                          T_:
   873E                          TCOD0:
   873E    01 05 09 0B           		DB 00H+1,04H+1,08H+1,0AH+1,0CH+1,0EH+1,12H+1,14H+1
-  8742    0D 0F 13 15
+  8742    0D 0F 13 15           
   8746    19 25 3D 00           		DB 18H+1,24H+1,3CH+1,0
-
+                                
   874A                          TCOD1:
   874A    5D 00                 		DB 5CH+1,0
-
+                                
   874C                          TCOD2:
   874C    31 37 4D 53           		DB 30H+1,36H+1,4CH+1,52H+1,5EH+1,70H+1,82H,8CH,9CH
-  8750    5F 71 82 8C
-  8754    9C
+  8750    5F 71 82 8C           
+  8754    9C                    
   8755    9E A0 A6 A8           		DB 9EH,0A0H,0A6H,0A8H,0AAH,0ACH,0AEH,0AEH,0
-  8759    AA AC AE AE
-  875D    00
-
+  8759    AA AC AE AE           
+  875D    00                    
+                                
   875E                          TCNW3:
   875E    57                    		DB 56H+1
-
+                                
   875F                          TCOD3:
   875F    1F 23 25 29           		DB 1EH+1,22H+1,24H+1,28H+1,2CH+1,2EH+1,32H+1,0BEH+1,0
-  8763    2D 2F 33 BF
-  8767    00
-
+  8763    2D 2F 33 BF           
+  8767    00                    
+                                
   8768                          TCNW0:
   8768    1D 21 23 27           		DB 1CH+1,20H+1,22H+1,26H+1,2AH+1,2CH+1,30H+1,54H+1
-  876C    2B 2D 31 55
+  876C    2B 2D 31 55           
   8770    BD BF 00              		DB 0BCH+1,0BEH+1,0
   874A                          TCNW1	EQU TCOD1
-
+                                
   8773                          TCNW2:
   8773    1B 21 25 29           		DB 1AH+1,20H+1,24H+1,28H+1,2AH+1,3AH+1,4CH+1,5EH+1
-  8777    2B 3B 4D 5F
+  8777    2B 3B 4D 5F           
   877B    BB BD BF 00           		DB 0BAH+1,0BCH+1,0BEH+1,0
   877E                          PT3EMPTYORN EQU $-1
   877F    01 00                 		DB 1,0
-
+                                
                                 ;	first 12 values of tone tables (packed)
   8781                          T_PACK:
   8781    0D D8                 	DB 0DH,0D8H	;	06ECH*2 = 0DD8H
@@ -1525,9 +1538,9 @@
   87B3    E0                    	DB 0D60H-0C80H
   87B4    B0                    	DB 0E10H-0D60H
   87B5    E8                    	DB 0EF8H-0E10H
-
+                                
   87B6                          VARS:
-
+                                
                                 ;	ChannelsVars
   0000                          CPSIOR	EQU	0	;	position in ornament
   0001                          CPSISM	EQU	1	;	position in sample
@@ -1553,14 +1566,14 @@
   001B                          CNTSK	EQU	27	;	note skip counter
   001C                          CVOL	EQU	28	;	channel volume
   001D                          CHPSIZ	EQU	29	;	total channel work area size
-
+                                
   87B6                          ChanA:
   87B6                          	DS	CHPSIZ
   87D3                          ChanB:
   87D3                          	DS	CHPSIZ
   87F0                          ChanC:
   87F0                          	DS	CHPSIZ
-
+                                
                                 ;	GlobalVars
   880D                          DelyCnt:
   880D    00                    	DB 0
@@ -1573,16 +1586,16 @@
   8811    00                    	DB 0
   8812                          AddToNs:
   8812    00                    	DB 0
-
+                                
   8813                          AYREGS:
-
+                                
   8813                          VT_:
   8813                          	DS 256	;	CreatedVolumeTableAddress
-
+                                
   8821                          EnvBase	EQU VT_+14
-
+                                
   8823                          T1_	EQU VT_+16	;	Tone tables data depacked here
-
+                                
   8823                          TOLD1	EQU T1_
   883B                          TOLD2	EQU TOLD1+24
   8853                          TOLD3	EQU TOLD2+24
@@ -1591,1155 +1604,1154 @@
   8823                          TNEW1	EQU TOLD1
   886D                          TNEW2	EQU TNEW0+24
   8853                          TNEW3	EQU TOLD3
-
+                                
   8913                          NT_:
   8913                          	DS 192	;	CreatedNoteTableAddress
-
+                                
                                 ;	local var
   881D                          Ampl	EQU AYREGS+AmplC
   8823                          VAR0END	EQU VT_+16	;	INIT zeroes from VARS to VAR0END-1
   89D3                          VARSEND EQU $
   89D3                          MDLADDR EQU $
-
+                                
                                 ; ---------------------------------------------------------------------------
                                 ;	EMBEDDED PT3 MODULE
                                 ;
-                                ;	Title			: "Sweet Dreams" Eurythmics (rmx)
+                                ;	Title		: "Sweet Dreams" Eurythmics (rmx)
                                 ;	Author		: nq/skrju, 211211
-                                ;	Year			: 2011
+                                ;	Year		: 2011
                                 ;	Format		: Pro Tracker 3 (PT3)
-                                ;	Chip			: AY-compatible
+                                ;	Chip		: AY-compatible
                                 ;	Layout		: ABC, three channels
                                 ;	Duration	: approximately 1:42.23
-                                ;	Size			: 4478 bytes
+                                ;	Size		: 4478 bytes
                                 ; ---------------------------------------------------------------------------
-
   89D3                          SONGBG:
   89D3    7E 05 BF 02           	DB	7EH,05H,0BFH,02H,7CH,05H,00H,6BH,0FH,1CH,0FH,16H,00H,00H,20H,63H
-  89D7    7C 05 00 6B
-  89DB    0F 1C 0F 16
-  89DF    00 00 20 63
+  89D7    7C 05 00 6B           
+  89DB    0F 1C 0F 16           
+  89DF    00 00 20 63           
   89E3    6F 6D 70 69           	DB	6FH,6DH,70H,69H,6CH,61H,74H,69H,6FH,6EH,20H,6FH,66H,20H,20H,22H
-  89E7    6C 61 74 69
-  89EB    6F 6E 20 6F
-  89EF    66 20 20 22
+  89E7    6C 61 74 69           
+  89EB    6F 6E 20 6F           
+  89EF    66 20 20 22           
   89F3    53 77 65 65           	DB	53H,77H,65H,65H,74H,20H,44H,72H,65H,61H,6DH,73H,22H,20H,45H,75H
-  89F7    74 20 44 72
-  89FB    65 61 6D 73
-  89FF    22 20 45 75
+  89F7    74 20 44 72           
+  89FB    65 61 6D 73           
+  89FF    22 20 45 75           
   8A03    72 79 74 68           	DB	72H,79H,74H,68H,6DH,69H,63H,73H,20H,28H,72H,6DH,78H,29H,20H,62H
-  8A07    6D 69 63 73
-  8A0B    20 28 72 6D
-  8A0F    78 29 20 62
+  8A07    6D 69 63 73           
+  8A0B    20 28 72 6D           
+  8A0F    78 29 20 62           
   8A13    79 20 20 6E           	DB	79H,20H,20H,6EH,71H,2FH,73H,6BH,72H,6AH,75H,2CH,20H,32H,31H,31H
-  8A17    71 2F 73 6B
-  8A1B    72 6A 75 2C
-  8A1F    20 32 31 31
+  8A17    71 2F 73 6B           
+  8A1B    72 6A 75 2C           
+  8A1F    20 32 31 31           
   8A23    32 31 31 20           	DB	32H,31H,31H,20H,20H,20H,20H,20H,20H,20H,20H,20H,20H,20H,20H,20H
-  8A27    20 20 20 20
-  8A2B    20 20 20 20
-  8A2F    20 20 20 20
+  8A27    20 20 20 20           
+  8A2B    20 20 20 20           
+  8A2F    20 20 20 20           
   8A33    20 20 20 02           	DB	20H,20H,20H,02H,03H,1AH,00H,0E4H,00H,00H,00H,9EH,0FH,0A4H,0FH,0BAH
-  8A37    03 1A 00 E4
-  8A3B    00 00 00 9E
-  8A3F    0F A4 0F BA
+  8A37    03 1A 00 E4           
+  8A3B    00 00 00 9E           
+  8A3F    0F A4 0F BA           
   8A43    0F CC 0F DE           	DB	0FH,0CCH,0FH,0DEH,0FH,0F4H,0FH,2AH,10H,48H,10H,66H,10H,74H,10H,0AAH
-  8A47    0F F4 0F 2A
-  8A4B    10 48 10 66
-  8A4F    10 74 10 AA
+  8A47    0F F4 0F 2A           
+  8A4B    10 48 10 66           
+  8A4F    10 74 10 AA           
   8A53    10 BC 10 00           	DB	10H,0BCH,10H,00H,00H,0C6H,10H,0CCH,10H,0DAH,10H,00H,00H,00H,00H,00H
-  8A57    00 C6 10 CC
-  8A5B    10 DA 10 00
-  8A5F    00 00 00 00
+  8A57    00 C6 10 CC           
+  8A5B    10 DA 10 00           
+  8A5F    00 00 00 00           
   8A63    00 00 00 00           	DB	00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
-  8A67    00 00 00 00
-  8A6B    00 00 00 00
-  8A6F    00 00 00 00
+  8A67    00 00 00 00           
+  8A6B    00 00 00 00           
+  8A6F    00 00 00 00           
   8A73    00 00 00 00           	DB	00H,00H,00H,00H,00H,00H,00H,00H,00H,0E8H,10H,0EBH,10H,16H,11H,1AH
-  8A77    00 00 00 00
-  8A7B    00 E8 10 EB
-  8A7F    10 16 11 1A
+  8A77    00 00 00 00           
+  8A7B    00 E8 10 EB           
+  8A7F    10 16 11 1A           
   8A83    11 1F 11 76           	DB	11H,1FH,11H,76H,11H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H,00H
-  8A87    11 00 00 00
-  8A8B    00 00 00 00
-  8A8F    00 00 00 00
+  8A87    11 00 00 00           
+  8A8B    00 00 00 00           
+  8A8F    00 00 00 00           
   8A93    00 00 00 00           	DB	00H,00H,00H,00H,00H,00H,00H,7BH,11H,00H,00H,03H,09H,06H,06H,06H
-  8A97    00 00 00 7B
-  8A9B    11 00 00 03
-  8A9F    09 06 06 06
+  8A97    00 00 00 7B           
+  8A9B    11 00 00 03           
+  8A9F    09 06 06 06           
   8AA3    0C 0F 0F 0F           	DB	0CH,0FH,0FH,0FH,12H,15H,18H,1BH,1EH,21H,24H,21H,27H,06H,0CH,0FH
-  8AA7    12 15 18 1B
-  8AAB    1E 21 24 21
-  8AAF    27 06 0C 0F
+  8AA7    12 15 18 1B           
+  8AAB    1E 21 24 21           
+  8AAF    27 06 0C 0F           
   8AB3    0F 0F 12 FF           	DB	0FH,0FH,12H,0FFH,38H,01H,2DH,05H,9FH,0BH,65H,01H,78H,05H,0CCH,0BH
-  8AB7    38 01 2D 05
-  8ABB    9F 0B 65 01
-  8ABF    78 05 CC 0B
+  8AB7    38 01 2D 05           
+  8ABB    9F 0B 65 01           
+  8ABF    78 05 CC 0B           
   8AC3    A9 01 08 06           	DB	0A9H,01H,08H,06H,10H,0CH,45H,02H,69H,06H,0BEH,0CH,95H,02H,00H,07H
-  8AC7    10 0C 45 02
-  8ACB    69 06 BE 0C
-  8ACF    95 02 00 07
+  8AC7    10 0C 45 02           
+  8ACB    69 06 BE 0C           
+  8ACF    95 02 00 07           
   8AD3    0B 0D A9 01           	DB	0BH,0DH,0A9H,01H,65H,07H,10H,0CH,3BH,03H,21H,08H,0BBH,0DH,0B1H,03H
-  8AD7    65 07 10 0C
-  8ADB    3B 03 21 08
-  8ADF    BB 0D B1 03
+  8AD7    65 07 10 0C           
+  8ADB    3B 03 21 08           
+  8ADF    BB 0D B1 03           
   8AE3    D3 08 3A 0E           	DB	0D3H,08H,3AH,0EH,0B1H,03H,0FH,09H,3AH,0EH,0F2H,03H,53H,09H,79H,0EH
-  8AE7    B1 03 0F 09
-  8AEB    3A 0E F2 03
-  8AEF    53 09 79 0E
+  8AE7    B1 03 0F 09           
+  8AEB    3A 0E F2 03           
+  8AEF    53 09 79 0E           
   8AF3    4E 04 B6 09           	DB	4EH,04H,0B6H,09H,0D3H,0EH,0A3H,04H,14H,0AH,28H,0FH,0A3H,04H,0A7H,0AH
-  8AF7    D3 0E A3 04
-  8AFB    14 0A 28 0F
-  8AFF    A3 04 A7 0A
+  8AF7    D3 0E A3 04           
+  8AFB    14 0A 28 0F           
+  8AFF    A3 04 A7 0A           
   8B03    28 0F A3 04           	DB	28H,0FH,0A3H,04H,3AH,0BH,28H,0FH,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H
-  8B07    3A 0B 28 0F
-  8B0B    F0 0C CF B1
-  8B0F    01 74 18 00
+  8B07    3A 0B 28 0F           
+  8B0B    F0 0C CF B1           
+  8B0F    01 74 18 00           
   8B13    68 02 B1 07           	DB	68H,02H,0B1H,07H,50H,0D3H,0B1H,02H,50H,0C0H,5CH,0C0H,53H,0C0H,5FH,0C0H
-  8B17    50 D3 B1 02
-  8B1B    50 C0 5C C0
-  8B1F    53 C0 5F C0
+  8B17    50 D3 B1 02           
+  8B1B    50 C0 5C C0           
+  8B1F    53 C0 5F C0           
   8B23    50 C0 5C B1           	DB	50H,0C0H,5CH,0B1H,0AH,0C0H,0B1H,02H,58H,0C0H,5CH,0C0H,57H,0C0H,63H,0C0H
-  8B27    0A C0 B1 02
-  8B2B    58 C0 5C C0
-  8B2F    57 C0 63 C0
+  8B27    0A C0 B1 02           
+  8B2B    58 C0 5C C0           
+  8B2F    57 C0 63 C0           
   8B33    57 C0 5A C0           	DB	57H,0C0H,5AH,0C0H,00H,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H,68H,02H,0B1H
-  8B37    00 F0 0C CF
-  8B3B    B1 01 74 18
-  8B3F    00 68 02 B1
+  8B37    00 F0 0C CF           
+  8B3B    B1 01 74 18           
+  8B3F    00 68 02 B1           
   8B43    07 50 D3 42           	DB	07H,50H,0D3H,42H,0B1H,02H,50H,0C0H,5CH,0C8H,50H,0CFH,53H,0C8H,5CH,0CFH
-  8B47    B1 02 50 C0
-  8B4B    5C C8 50 CF
-  8B4F    53 C8 5C CF
+  8B47    B1 02 50 C0           
+  8B4B    5C C8 50 CF           
+  8B4F    53 C8 5C CF           
   8B53    5F C8 53 CF           	DB	5FH,0C8H,53H,0CFH,50H,0C8H,5FH,0CFH,5CH,0B1H,04H,0C0H,0C8H,0B1H,02H,5CH
-  8B57    50 C8 5F CF
-  8B5B    5C B1 04 C0
-  8B5F    C8 B1 02 5C
+  8B57    50 C8 5F CF           
+  8B5B    5C B1 04 C0           
+  8B5F    C8 B1 02 5C           
   8B63    C0 50 CF 58           	DB	0C0H,50H,0CFH,58H,0C0H,5CH,0C8H,58H,0CFH,57H,0C8H,5CH,0CFH,63H,0C8H,57H
-  8B67    C0 5C C8 58
-  8B6B    CF 57 C8 5C
-  8B6F    CF 63 C8 57
+  8B67    C0 5C C8 58           
+  8B6B    CF 57 C8 5C           
+  8B6F    CF 63 C8 57           
   8B73    CF 57 C8 63           	DB	0CFH,57H,0C8H,63H,0CFH,5AH,0C8H,57H,00H,0F0H,0CH,0CFH,0B1H,01H,74H,18H
-  8B77    CF 5A C8 57
-  8B7B    00 F0 0C CF
-  8B7F    B1 01 74 18
+  8B77    CF 5A C8 57           
+  8B7B    00 F0 0C CF           
+  8B7F    B1 01 74 18           
   8B83    00 68 02 B1           	DB	00H,68H,02H,0B1H,05H,50H,10H,0CH,0B1H,01H,74H,18H,00H,68H,02H,50H
-  8B87    05 50 10 0C
-  8B8B    B1 01 74 18
-  8B8F    00 68 02 50
+  8B87    05 50 10 0C           
+  8B8B    B1 01 74 18           
+  8B8F    00 68 02 50           
   8B93    D7 B1 06 74           	DB	0D7H,0B1H,06H,74H,10H,0CH,0B1H,01H,74H,18H,00H,68H,02H,50H,10H,06H
-  8B97    10 0C B1 01
-  8B9B    74 18 00 68
-  8B9F    02 50 10 06
+  8B97    10 0C B1 01           
+  8B9B    74 18 00 68           
+  8B9F    02 50 10 06           
   8BA3    B1 02 50 D7           	DB	0B1H,02H,50H,0D7H,74H,0D6H,0B1H,01H,74H,18H,00H,68H,02H,0B1H,03H,50H
-  8BA7    74 D6 B1 01
-  8BAB    74 18 00 68
-  8BAF    02 B1 03 50
+  8BA7    74 D6 B1 01           
+  8BAB    74 18 00 68           
+  8BAF    02 B1 03 50           
   8BB3    D7 B1 02 74           	DB	0D7H,0B1H,02H,74H,10H,0CH,0B1H,01H,74H,18H,00H,68H,02H,50H,0D3H,0B1H
-  8BB7    10 0C B1 01
-  8BBB    74 18 00 68
-  8BBF    02 50 D3 B1
+  8BB7    10 0C B1 01           
+  8BBB    74 18 00 68           
+  8BBF    02 50 D3 B1           
   8BC3    02 50 DB B1           	DB	02H,50H,0DBH,0B1H,01H,74H,6DH,10H,0CH,74H,18H,00H,42H,02H,58H,0D7H
-  8BC7    01 74 6D 10
-  8BCB    0C 74 18 00
-  8BCF    42 02 58 D7
+  8BC7    01 74 6D 10           
+  8BCB    0C 74 18 00           
+  8BCF    42 02 58 D7           
   8BD3    B1 02 74 10           	DB	0B1H,02H,74H,10H,0CH,0B1H,01H,74H,18H,00H,42H,02H,0B1H,03H,58H,0D7H
-  8BD7    0C B1 01 74
-  8BDB    18 00 42 02
-  8BDF    B1 03 58 D7
+  8BD7    0C B1 01 74           
+  8BDB    18 00 42 02           
+  8BDF    B1 03 58 D7           
   8BE3    B1 02 74 10           	DB	0B1H,02H,74H,10H,0CH,0B1H,01H,74H,18H,00H,42H,02H,58H,0D3H,0B1H,02H
-  8BE7    0C B1 01 74
-  8BEB    18 00 42 02
-  8BEF    58 D3 B1 02
+  8BE7    0C B1 01 74           
+  8BEB    18 00 42 02           
+  8BEF    58 D3 B1 02           
   8BF3    58 D7 74 10           	DB	58H,0D7H,74H,10H,0CH,0B1H,01H,74H,18H,00H,46H,02H,57H,0D7H,0B1H,04H
-  8BF7    0C B1 01 74
-  8BFB    18 00 46 02
-  8BFF    57 D7 B1 04
+  8BF7    0C B1 01 74           
+  8BFB    18 00 46 02           
+  8BFF    57 D7 B1 04           
   8C03    74 10 0C B1           	DB	74H,10H,0CH,0B1H,01H,74H,18H,00H,46H,02H,57H,0D7H,0B1H,04H,74H,0DBH
-  8C07    01 74 18 00
-  8C0B    46 02 57 D7
-  8C0F    B1 04 74 DB
+  8C07    01 74 18 00           
+  8C0B    46 02 57 D7           
+  8C0F    B1 04 74 DB           
   8C13    B1 02 74 71           	DB	0B1H,02H,74H,71H,00H,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H,68H,02H,0B1H
-  8C17    00 F0 0C CF
-  8C1B    B1 01 74 18
-  8C1F    00 68 02 B1
+  8C17    00 F0 0C CF           
+  8C1B    B1 01 74 18           
+  8C1F    00 68 02 B1           
   8C23    07 50 D3 42           	DB	07H,50H,0D3H,42H,0B1H,02H,50H,0C0H,5CH,0C8H,50H,0CFH,53H,0C8H,5CH,0CFH
-  8C27    B1 02 50 C0
-  8C2B    5C C8 50 CF
-  8C2F    53 C8 5C CF
+  8C27    B1 02 50 C0           
+  8C2B    5C C8 50 CF           
+  8C2F    53 C8 5C CF           
   8C33    5F C8 53 CF           	DB	5FH,0C8H,53H,0CFH,50H,0C8H,5FH,0CFH,5CH,0B1H,04H,0C0H,0C8H,0B1H,02H,5CH
-  8C37    50 C8 5F CF
-  8C3B    5C B1 04 C0
-  8C3F    C8 B1 02 5C
+  8C37    50 C8 5F CF           
+  8C3B    5C B1 04 C0           
+  8C3F    C8 B1 02 5C           
   8C43    C0 50 B1 04           	DB	0C0H,50H,0B1H,04H,0C0H,0C5H,0B1H,02H,5CH,0C0H,0F0H,0AH,0CFH,0B1H,04H,74H
-  8C47    C0 C5 B1 02
-  8C4B    5C C0 F0 0A
-  8C4F    CF B1 04 74
+  8C47    C0 C5 B1 02           
+  8C4B    5C C0 F0 0A           
+  8C4F    CF B1 04 74           
   8C53    DB CC B1 02           	DB	0DBH,0CCH,0B1H,02H,74H,0D6H,0CFH,0B1H,04H,74H,0DBH,0CCH,0B1H,02H,6FH,0D7H
-  8C57    74 D6 CF B1
-  8C5B    04 74 DB CC
-  8C5F    B1 02 6F D7
+  8C57    74 D6 CF B1           
+  8C5B    04 74 DB CC           
+  8C5F    B1 02 6F D7           
   8C63    CF B1 04 74           	DB	0CFH,0B1H,04H,74H,00H,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H,68H,02H,0B1H
-  8C67    00 F0 0C CF
-  8C6B    B1 01 74 18
-  8C6F    00 68 02 B1
+  8C67    00 F0 0C CF           
+  8C6B    B1 01 74 18           
+  8C6F    00 68 02 B1           
   8C73    05 50 10 0C           	DB	05H,50H,10H,0CH,0B1H,01H,74H,18H,00H,68H,02H,50H,0D7H,0B1H,06H,74H
-  8C77    B1 01 74 18
-  8C7B    00 68 02 50
-  8C7F    D7 B1 06 74
+  8C77    B1 01 74 18           
+  8C7B    00 68 02 50           
+  8C7F    D7 B1 06 74           
   8C83    10 0C B1 01           	DB	10H,0CH,0B1H,01H,74H,18H,00H,68H,02H,50H,10H,06H,0B1H,02H,50H,0D7H
-  8C87    74 18 00 68
-  8C8B    02 50 10 06
-  8C8F    B1 02 50 D7
+  8C87    74 18 00 68           
+  8C8B    02 50 10 06           
+  8C8F    B1 02 50 D7           
   8C93    74 D6 B1 01           	DB	74H,0D6H,0B1H,01H,74H,18H,00H,68H,02H,0B1H,03H,50H,0D7H,0B1H,02H,74H
-  8C97    74 18 00 68
-  8C9B    02 B1 03 50
-  8C9F    D7 B1 02 74
+  8C97    74 18 00 68           
+  8C9B    02 B1 03 50           
+  8C9F    D7 B1 02 74           
   8CA3    10 0C B1 01           	DB	10H,0CH,0B1H,01H,74H,18H,00H,68H,02H,50H,0D3H,0B1H,02H,50H,0DBH,0B1H
-  8CA7    74 18 00 68
-  8CAB    02 50 D3 B1
-  8CAF    02 50 DB B1
+  8CA7    74 18 00 68           
+  8CAB    02 50 D3 B1           
+  8CAF    02 50 DB B1           
   8CB3    01 74 6D 10           	DB	01H,74H,6DH,10H,0CH,74H,18H,00H,42H,02H,58H,0D7H,0B1H,02H,74H,10H
-  8CB7    0C 74 18 00
-  8CBB    42 02 58 D7
-  8CBF    B1 02 74 10
+  8CB7    0C 74 18 00           
+  8CBB    42 02 58 D7           
+  8CBF    B1 02 74 10           
   8CC3    0C B1 01 74           	DB	0CH,0B1H,01H,74H,18H,00H,42H,02H,0B1H,03H,58H,0D3H,0B1H,02H,58H,10H
-  8CC7    18 00 42 02
-  8CCB    B1 03 58 D3
-  8CCF    B1 02 58 10
+  8CC7    18 00 42 02           
+  8CCB    B1 03 58 D3           
+  8CCF    B1 02 58 10           
   8CD3    0C B1 01 74           	DB	0CH,0B1H,01H,74H,18H,00H,42H,02H,58H,0D3H,0B1H,02H,58H,0D7H,74H,10H
-  8CD7    18 00 42 02
-  8CDB    58 D3 B1 02
-  8CDF    58 D7 74 10
+  8CD7    18 00 42 02           
+  8CDB    58 D3 B1 02           
+  8CDF    58 D7 74 10           
   8CE3    0C B1 01 74           	DB	0CH,0B1H,01H,74H,18H,00H,46H,02H,57H,0D3H,0B1H,04H,57H,10H,0CH,0B1H
-  8CE7    18 00 46 02
-  8CEB    57 D3 B1 04
-  8CEF    57 10 0C B1
+  8CE7    18 00 46 02           
+  8CEB    57 D3 B1 04           
+  8CEF    57 10 0C B1           
   8CF3    01 74 18 00           	DB	01H,74H,18H,00H,46H,02H,57H,0D3H,0B1H,02H,57H,0C0H,10H,0CH,0B1H,01H
-  8CF7    46 02 57 D3
-  8CFB    B1 02 57 C0
-  8CFF    10 0C B1 01
+  8CF7    46 02 57 D3           
+  8CFB    B1 02 57 C0           
+  8CFF    10 0C B1 01           
   8D03    74 18 00 46           	DB	74H,18H,00H,46H,02H,57H,0D3H,0B1H,02H,57H,00H,0F0H,0CH,0CFH,0B1H,01H
-  8D07    02 57 D3 B1
-  8D0B    02 57 00 F0
-  8D0F    0C CF B1 01
+  8D07    02 57 D3 B1           
+  8D0B    02 57 00 F0           
+  8D0F    0C CF B1 01           
   8D13    74 18 00 68           	DB	74H,18H,00H,68H,02H,0B1H,05H,50H,10H,0CH,0B1H,01H,74H,18H,00H,68H
-  8D17    02 B1 05 50
-  8D1B    10 0C B1 01
-  8D1F    74 18 00 68
+  8D17    02 B1 05 50           
+  8D1B    10 0C B1 01           
+  8D1F    74 18 00 68           
   8D23    02 50 D7 B1           	DB	02H,50H,0D7H,0B1H,06H,74H,10H,0CH,0B1H,01H,74H,18H,00H,68H,02H,50H
-  8D27    06 74 10 0C
-  8D2B    B1 01 74 18
-  8D2F    00 68 02 50
+  8D27    06 74 10 0C           
+  8D2B    B1 01 74 18           
+  8D2F    00 68 02 50           
   8D33    10 06 B1 02           	DB	10H,06H,0B1H,02H,50H,0D7H,74H,0D6H,0B1H,01H,74H,18H,00H,68H,02H,0B1H
-  8D37    50 D7 74 D6
-  8D3B    B1 01 74 18
-  8D3F    00 68 02 B1
+  8D37    50 D7 74 D6           
+  8D3B    B1 01 74 18           
+  8D3F    00 68 02 B1           
   8D43    03 50 D7 B1           	DB	03H,50H,0D7H,0B1H,02H,74H,10H,0CH,0B1H,01H,74H,18H,00H,68H,02H,50H
-  8D47    02 74 10 0C
-  8D4B    B1 01 74 18
-  8D4F    00 68 02 50
+  8D47    02 74 10 0C           
+  8D4B    B1 01 74 18           
+  8D4F    00 68 02 50           
   8D53    D3 B1 02 50           	DB	0D3H,0B1H,02H,50H,0DBH,0B1H,01H,74H,6DH,0B1H,02H,76H,0D7H,0B1H,06H,74H
-  8D57    DB B1 01 74
-  8D5B    6D B1 02 76
-  8D5F    D7 B1 06 74
+  8D57    DB B1 01 74           
+  8D5B    6D B1 02 76           
+  8D5F    D7 B1 06 74           
   8D63    DB B1 02 73           	DB	0DBH,0B1H,02H,73H,0B1H,06H,71H,0D7H,0B1H,04H,74H,0DBH,0B1H,02H,6CH,10H
-  8D67    B1 06 71 D7
-  8D6B    B1 04 74 DB
-  8D6F    B1 02 6C 10
+  8D67    B1 06 71 D7           
+  8D6B    B1 04 74 DB           
+  8D6F    B1 02 6C 10           
   8D73    06 01 50 01           	DB	06H,01H,50H,01H,10H,0FFH,0D2H,41H,0B1H,04H,74H,01H,0D0H,01H,10H,0FFH
-  8D77    10 FF D2 41
-  8D7B    B1 04 74 01
-  8D7F    D0 01 10 FF
+  8D77    10 FF D2 41           
+  8D7B    B1 04 74 01           
+  8D7F    D0 01 10 FF           
   8D83    00 F0 0C CF           	DB	00H,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H,68H,02H,0B1H,07H,50H,0D3H,0B1H
-  8D87    B1 01 74 18
-  8D8B    00 68 02 B1
-  8D8F    07 50 D3 B1
+  8D87    B1 01 74 18           
+  8D8B    00 68 02 B1           
+  8D8F    07 50 D3 B1           
   8D93    02 50 C0 5C           	DB	02H,50H,0C0H,5CH,0C0H,53H,0C0H,5FH,0C0H,50H,0C0H,5CH,01H,0D0H,01H,30H
-  8D97    C0 53 C0 5F
-  8D9B    C0 50 C0 5C
-  8D9F    01 D0 01 30
+  8D97    C0 53 C0 5F           
+  8D9B    C0 50 C0 5C           
+  8D9F    01 D0 01 30           
   8DA3    FF 10 0C B1           	DB	0FFH,10H,0CH,0B1H,01H,74H,18H,00H,42H,02H,0B1H,07H,58H,10H,06H,0B1H
-  8DA7    01 74 18 00
-  8DAB    42 02 B1 07
-  8DAF    58 10 06 B1
+  8DA7    01 74 18 00           
+  8DAB    42 02 B1 07           
+  8DAF    58 10 06 B1           
   8DB3    02 58 C0 5C           	DB	02H,58H,0C0H,5CH,0C0H,57H,0C0H,63H,0C0H,57H,0C0H,5AH,01H,0D0H,01H,10H
-  8DB7    C0 57 C0 63
-  8DBB    C0 57 C0 5A
-  8DBF    01 D0 01 10
+  8DB7    C0 57 C0 63           
+  8DBB    C0 57 C0 5A           
+  8DBF    01 D0 01 10           
   8DC3    FF 00 F0 0C           	DB	0FFH,00H,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H,68H,02H,0B1H,07H,50H,0D3H
-  8DC7    CF B1 01 74
-  8DCB    18 00 68 02
-  8DCF    B1 07 50 D3
+  8DC7    CF B1 01 74           
+  8DCB    18 00 68 02           
+  8DCF    B1 07 50 D3           
   8DD3    42 B1 02 50           	DB	42H,0B1H,02H,50H,0C0H,5CH,0C8H,50H,0CFH,53H,0C8H,5CH,0CFH,5FH,0C8H,53H
-  8DD7    C0 5C C8 50
-  8DDB    CF 53 C8 5C
-  8DDF    CF 5F C8 53
+  8DD7    C0 5C C8 50           
+  8DDB    CF 53 C8 5C           
+  8DDF    CF 5F C8 53           
   8DE3    CF 50 C8 5F           	DB	0CFH,50H,0C8H,5FH,0CFH,5CH,01H,0D0H,01H,30H,0FFH,0F0H,0CH,0B1H,01H,74H
-  8DE7    CF 5C 01 D0
-  8DEB    01 30 FF F0
-  8DEF    0C B1 01 74
+  8DE7    CF 5C 01 D0           
+  8DEB    01 30 FF F0           
+  8DEF    0C B1 01 74           
   8DF3    18 00 42 02           	DB	18H,00H,42H,02H,0B1H,07H,58H,0F2H,06H,0B1H,02H,58H,0C8H,0C0H,0CFH,5CH
-  8DF7    B1 07 58 F2
-  8DFB    06 B1 02 58
-  8DFF    C8 C0 CF 5C
+  8DF7    B1 07 58 F2           
+  8DFB    06 B1 02 58           
+  8DFF    C8 C0 CF 5C           
   8E03    C8 58 F0 0C           	DB	0C8H,58H,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H,46H,02H,0B1H,07H,57H,0F2H
-  8E07    CF B1 01 74
-  8E0B    18 00 46 02
-  8E0F    B1 07 57 F2
+  8E07    CF B1 01 74           
+  8E0B    18 00 46 02           
+  8E0F    B1 07 57 F2           
   8E13    06 B1 02 57           	DB	06H,0B1H,02H,57H,0C8H,63H,0CFH,5AH,01H,0D0H,01H,10H,0FFH,00H,0F0H,0CH
-  8E17    C8 63 CF 5A
-  8E1B    01 D0 01 10
-  8E1F    FF 00 F0 0C
+  8E17    C8 63 CF 5A           
+  8E1B    01 D0 01 10           
+  8E1F    FF 00 F0 0C           
   8E23    CF B1 01 74           	DB	0CFH,0B1H,01H,74H,18H,00H,68H,02H,0B1H,07H,50H,0D3H,42H,0B1H,02H,50H
-  8E27    18 00 68 02
-  8E2B    B1 07 50 D3
-  8E2F    42 B1 02 50
+  8E27    18 00 68 02           
+  8E2B    B1 07 50 D3           
+  8E2F    42 B1 02 50           
   8E33    C0 5C C8 50           	DB	0C0H,5CH,0C8H,50H,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H,68H,02H,0B1H,07H
-  8E37    F0 0C CF B1
-  8E3B    01 74 18 00
-  8E3F    68 02 B1 07
+  8E37    F0 0C CF B1           
+  8E3B    01 74 18 00           
+  8E3F    68 02 B1 07           
   8E43    50 D3 42 B1           	DB	50H,0D3H,42H,0B1H,02H,50H,0C8H,5FH,0CFH,5CH,01H,0D0H,01H,30H,0FFH,0F0H
-  8E47    02 50 C8 5F
-  8E4B    CF 5C 01 D0
-  8E4F    01 30 FF F0
+  8E47    02 50 C8 5F           
+  8E4B    CF 5C 01 D0           
+  8E4F    01 30 FF F0           
   8E53    0C B1 01 74           	DB	0CH,0B1H,01H,74H,18H,00H,42H,02H,0B1H,07H,58H,0F2H,06H,0B1H,04H,58H
-  8E57    18 00 42 02
-  8E5B    B1 07 58 F2
-  8E5F    06 B1 04 58
+  8E57    18 00 42 02           
+  8E5B    B1 07 58 F2           
+  8E5F    06 B1 04 58           
   8E63    F0 0C B1 01           	DB	0F0H,0CH,0B1H,01H,74H,18H,00H,46H,02H,0B1H,0FH,57H,05H,0B1H,04H,0D0H
-  8E67    74 18 00 46
-  8E6B    02 B1 0F 57
-  8E6F    05 B1 04 D0
+  8E67    74 18 00 46           
+  8E6B    02 B1 0F 57           
+  8E6F    05 B1 04 D0           
   8E73    03 03 00 F0           	DB	03H,03H,00H,0F0H,0CH,0CFH,0B1H,01H,74H,18H,00H,68H,02H,0B1H,03H,50H
-  8E77    0C CF B1 01
-  8E7B    74 18 00 68
-  8E7F    02 B1 03 50
+  8E77    0C CF B1 01           
+  8E7B    74 18 00 68           
+  8E7F    02 B1 03 50           
   8E83    D3 42 B1 04           	DB	0D3H,42H,0B1H,04H,50H,0F0H,0CH,0B1H,01H,74H,18H,00H,34H,02H,0B1H,03H
-  8E87    50 F0 0C B1
-  8E8B    01 74 18 00
-  8E8F    34 02 B1 03
+  8E87    50 F0 0C B1           
+  8E8B    01 74 18 00           
+  8E8F    34 02 B1 03           
   8E93    5C D3 42 B1           	DB	5CH,0D3H,42H,0B1H,04H,50H,0F0H,0CH,0B1H,01H,74H,18H,00H,68H,02H,0B1H
-  8E97    04 50 F0 0C
-  8E9B    B1 01 74 18
-  8E9F    00 68 02 B1
+  8E97    04 50 F0 0C           
+  8E9B    B1 01 74 18           
+  8E9F    00 68 02 B1           
   8EA3    03 50 D3 42           	DB	03H,50H,0D3H,42H,0B1H,04H,50H,0F0H,0CH,0B1H,01H,74H,18H,00H,34H,02H
-  8EA7    B1 04 50 F0
-  8EAB    0C B1 01 74
-  8EAF    18 00 34 02
+  8EA7    B1 04 50 F0           
+  8EAB    0C B1 01 74           
+  8EAF    18 00 34 02           
   8EB3    B1 03 5C D3           	DB	0B1H,03H,5CH,0D3H,42H,0B1H,04H,50H,0F0H,0CH,0B1H,01H,74H,18H,00H,42H
-  8EB7    42 B1 04 50
-  8EBB    F0 0C B1 01
-  8EBF    74 18 00 42
+  8EB7    42 B1 04 50           
+  8EBB    F0 0C B1 01           
+  8EBF    74 18 00 42           
   8EC3    02 B1 03 58           	DB	02H,0B1H,03H,58H,0D3H,42H,0B1H,04H,58H,0F0H,0CH,0B1H,01H,74H,18H,00H
-  8EC7    D3 42 B1 04
-  8ECB    58 F0 0C B1
-  8ECF    01 74 18 00
+  8EC7    D3 42 B1 04           
+  8ECB    58 F0 0C B1           
+  8ECF    01 74 18 00           
   8ED3    34 02 B1 03           	DB	34H,02H,0B1H,03H,5CH,0D3H,42H,0B1H,04H,58H,0F0H,0CH,0B1H,01H,74H,18H
-  8ED7    5C D3 42 B1
-  8EDB    04 58 F0 0C
-  8EDF    B1 01 74 18
+  8ED7    5C D3 42 B1           
+  8EDB    04 58 F0 0C           
+  8EDF    B1 01 74 18           
   8EE3    00 46 02 B1           	DB	00H,46H,02H,0B1H,03H,57H,0D3H,42H,0B1H,04H,57H,0F0H,0CH,0B1H,01H,74H
-  8EE7    03 57 D3 42
-  8EEB    B1 04 57 F0
-  8EEF    0C B1 01 74
+  8EE7    03 57 D3 42           
+  8EEB    B1 04 57 F0           
+  8EEF    0C B1 01 74           
   8EF3    18 00 2F 02           	DB	18H,00H,2FH,02H,0B1H,03H,5EH,0D3H,42H,0B1H,04H,52H,00H,0F1H,04H,0CFH
-  8EF7    B1 03 5E D3
-  8EFB    42 B1 04 52
-  8EFF    00 F1 04 CF
+  8EF7    B1 03 5E D3           
+  8EFB    42 B1 04 52           
+  8EFF    00 F1 04 CF           
   8F03    B1 08 6A F0           	DB	0B1H,08H,6AH,0F0H,02H,0B9H,00H,34H,0B1H,02H,68H,0C0H,0B9H,00H,1AH,68H
-  8F07    02 B9 00 34
-  8F0B    B1 02 68 C0
-  8F0F    B9 00 1A 68
+  8F07    02 B9 00 34           
+  8F0B    B1 02 68 C0           
+  8F0F    B9 00 1A 68           
   8F13    C0 B9 00 2C           	DB	0C0H,0B9H,00H,2CH,6BH,0C0H,0B9H,00H,16H,6BH,0C0H,0B9H,00H,34H,68H,0C0H
-  8F17    6B C0 B9 00
-  8F1B    16 6B C0 B9
-  8F1F    00 34 68 C0
+  8F17    6B C0 B9 00           
+  8F1B    16 6B C0 B9           
+  8F1F    00 34 68 C0           
   8F23    B9 00 1A 68           	DB	0B9H,00H,1AH,68H,0C0H,0B9H,00H,42H,64H,0C0H,64H,0C0H,64H,0C0H,0B9H,00H
-  8F27    C0 B9 00 42
-  8F2B    64 C0 64 C0
-  8F2F    64 C0 B9 00
+  8F27    C0 B9 00 42           
+  8F2B    64 C0 64 C0           
+  8F2F    64 C0 B9 00           
   8F33    34 68 C0 B9           	DB	34H,68H,0C0H,0B9H,00H,46H,63H,0C0H,0B9H,00H,23H,63H,0C0H,0B9H,00H,46H
-  8F37    00 46 63 C0
-  8F3B    B9 00 23 63
-  8F3F    C0 B9 00 46
+  8F37    00 46 63 C0           
+  8F3B    B9 00 23 63           
+  8F3F    C0 B9 00 46           
   8F43    63 C0 B9 00           	DB	63H,0C0H,0B9H,00H,34H,68H,0C0H,00H,0F1H,04H,0CFH,0B1H,08H,6AH,0F5H,12H
-  8F47    34 68 C0 00
-  8F4B    F1 04 CF B1
-  8F4F    08 6A F5 12
+  8F47    34 68 C0 00           
+  8F4B    F1 04 CF B1           
+  8F4F    08 6A F5 12           
   8F53    B9 00 34 23           	DB	0B9H,00H,34H,23H,0B1H,01H,68H,20H,0D0H,0B1H,02H,0C0H,0F0H,02H,0B9H,00H
-  8F57    B1 01 68 20
-  8F5B    D0 B1 02 C0
-  8F5F    F0 02 B9 00
+  8F57    B1 01 68 20           
+  8F5B    D0 B1 02 C0           
+  8F5F    F0 02 B9 00           
   8F63    1A 68 C0 F5           	DB	1AH,68H,0C0H,0F5H,12H,0B9H,00H,2CH,23H,0B1H,01H,6BH,20H,0D0H,0B1H,02H
-  8F67    12 B9 00 2C
-  8F6B    23 B1 01 6B
-  8F6F    20 D0 B1 02
+  8F67    12 B9 00 2C           
+  8F6B    23 B1 01 6B           
+  8F6F    20 D0 B1 02           
   8F73    C0 F0 02 B9           	DB	0C0H,0F0H,02H,0B9H,00H,16H,6BH,0C0H,0F5H,12H,0B9H,00H,34H,24H,0B1H,01H
-  8F77    00 16 6B C0
-  8F7B    F5 12 B9 00
-  8F7F    34 24 B1 01
+  8F77    00 16 6B C0           
+  8F7B    F5 12 B9 00           
+  8F7F    34 24 B1 01           
   8F83    68 20 D0 B1           	DB	68H,20H,0D0H,0B1H,02H,0C0H,0F0H,02H,0B9H,00H,1AH,68H,0C0H,0F5H,12H,0B9H
-  8F87    02 C0 F0 02
-  8F8B    B9 00 1A 68
-  8F8F    C0 F5 12 B9
+  8F87    02 C0 F0 02           
+  8F8B    B9 00 1A 68           
+  8F8F    C0 F5 12 B9           
   8F93    00 42 24 B1           	DB	00H,42H,24H,0B1H,01H,64H,20H,0D0H,0B1H,02H,0C0H,0D1H,4FH,64H,0C0H,0D9H
-  8F97    01 64 20 D0
-  8F9B    B1 02 C0 D1
-  8F9F    4F 64 C0 D9
+  8F97    01 64 20 D0           
+  8F9B    B1 02 C0 D1           
+  8F9F    4F 64 C0 D9           
   8FA3    45 25 B1 01           	DB	45H,25H,0B1H,01H,64H,20H,0D0H,0B1H,02H,0C0H,0B9H,00H,34H,25H,0B1H,01H
-  8FA7    64 20 D0 B1
-  8FAB    02 C0 B9 00
-  8FAF    34 25 B1 01
+  8FA7    64 20 D0 B1           
+  8FAB    02 C0 B9 00           
+  8FAF    34 25 B1 01           
   8FB3    68 20 D0 B1           	DB	68H,20H,0D0H,0B1H,02H,0C0H,0F0H,02H,0B9H,00H,46H,63H,0C0H,0B9H,00H,23H
-  8FB7    02 C0 F0 02
-  8FBB    B9 00 46 63
-  8FBF    C0 B9 00 23
+  8FB7    02 C0 F0 02           
+  8FBB    B9 00 46 63           
+  8FBF    C0 B9 00 23           
   8FC3    63 C0 F5 12           	DB	63H,0C0H,0F5H,12H,0B9H,00H,46H,26H,0B1H,01H,63H,20H,0D0H,0B1H,02H,0C0H
-  8FC7    B9 00 46 26
-  8FCB    B1 01 63 20
-  8FCF    D0 B1 02 C0
+  8FC7    B9 00 46 26           
+  8FCB    B1 01 63 20           
+  8FCF    D0 B1 02 C0           
   8FD3    F0 02 B9 00           	DB	0F0H,02H,0B9H,00H,34H,68H,0C0H,00H,0F1H,04H,0CFH,0B1H,04H,6AH,0F5H,12H
-  8FD7    34 68 C0 00
-  8FDB    F1 04 CF B1
-  8FDF    04 6A F5 12
+  8FD7    34 68 C0 00           
+  8FDB    F1 04 CF B1           
+  8FDF    04 6A F5 12           
   8FE3    B9 00 68 B1           	DB	0B9H,00H,68H,0B1H,02H,9FH,0F1H,04H,6AH,0F5H,12H,0B9H,00H,34H,68H,0C0H
-  8FE7    02 9F F1 04
-  8FEB    6A F5 12 B9
-  8FEF    00 34 68 C0
+  8FE7    02 9F F1 04           
+  8FEB    6A F5 12 B9           
+  8FEF    00 34 68 C0           
   8FF3    B9 00 1A 68           	DB	0B9H,00H,1AH,68H,0C0H,0B9H,00H,2CH,6BH,0C0H,0B9H,00H,16H,9FH,0C0H,0B9H
-  8FF7    C0 B9 00 2C
-  8FFB    6B C0 B9 00
-  8FFF    16 9F C0 B9
+  8FF7    C0 B9 00 2C           
+  8FFB    6B C0 B9 00           
+  8FFF    16 9F C0 B9           
   9003    00 34 68 C0           	DB	00H,34H,68H,0C0H,0B9H,00H,1AH,68H,0C0H,0B9H,00H,42H,64H,0C0H,9FH,0C0H
-  9007    B9 00 1A 68
-  900B    C0 B9 00 42
-  900F    64 C0 9F C0
+  9007    B9 00 1A 68           
+  900B    C0 B9 00 42           
+  900F    64 C0 9F C0           
   9013    64 C0 B9 00           	DB	64H,0C0H,0B9H,00H,34H,68H,0C0H,0B9H,00H,46H,0B1H,01H,63H,0F0H,08H,0B9H
-  9017    34 68 C0 B9
-  901B    00 46 B1 01
-  901F    63 F0 08 B9
+  9017    34 68 C0 B9           
+  901B    00 46 B1 01           
+  901F    63 F0 08 B9           
   9023    00 46 B1 03           	DB	00H,46H,0B1H,03H,57H,0F5H,12H,0B9H,00H,23H,0B1H,02H,9DH,0C0H,0B9H,00H
-  9027    57 F5 12 B9
-  902B    00 23 B1 02
-  902F    9D C0 B9 00
+  9027    57 F5 12 B9           
+  902B    00 23 B1 02           
+  902F    9D C0 B9 00           
   9033    46 63 C0 B9           	DB	46H,63H,0C0H,0B9H,00H,34H,68H,0C0H,00H,0F1H,04H,0CFH,0B1H,08H,6AH,0F5H
-  9037    00 34 68 C0
-  903B    00 F1 04 CF
-  903F    B1 08 6A F5
+  9037    00 34 68 C0           
+  903B    00 F1 04 CF           
+  903F    B1 08 6A F5           
   9043    12 B9 00 34           	DB	12H,0B9H,00H,34H,26H,0B1H,01H,68H,20H,0D0H,0B1H,02H,0C0H,0F0H,02H,0B9H
-  9047    26 B1 01 68
-  904B    20 D0 B1 02
-  904F    C0 F0 02 B9
+  9047    26 B1 01 68           
+  904B    20 D0 B1 02           
+  904F    C0 F0 02 B9           
   9053    00 1A 68 C0           	DB	00H,1AH,68H,0C0H,0F5H,12H,0B9H,00H,2CH,26H,0B1H,01H,6BH,20H,0D0H,0B1H
-  9057    F5 12 B9 00
-  905B    2C 26 B1 01
-  905F    6B 20 D0 B1
+  9057    F5 12 B9 00           
+  905B    2C 26 B1 01           
+  905F    6B 20 D0 B1           
   9063    02 C0 F0 02           	DB	02H,0C0H,0F0H,02H,0B9H,00H,16H,6BH,0C0H,0F5H,12H,0B9H,00H,34H,26H,0B1H
-  9067    B9 00 16 6B
-  906B    C0 F5 12 B9
-  906F    00 34 26 B1
+  9067    B9 00 16 6B           
+  906B    C0 F5 12 B9           
+  906F    00 34 26 B1           
   9073    01 68 20 D0           	DB	01H,68H,20H,0D0H,0B1H,02H,0C0H,0F0H,02H,0B9H,00H,1AH,68H,0C0H,0F5H,12H
-  9077    B1 02 C0 F0
-  907B    02 B9 00 1A
-  907F    68 C0 F5 12
+  9077    B1 02 C0 F0           
+  907B    02 B9 00 1A           
+  907F    68 C0 F5 12           
   9083    B9 00 42 26           	DB	0B9H,00H,42H,26H,0B1H,01H,64H,20H,0D0H,0B1H,02H,0C0H,0D1H,4FH,64H,0C0H
-  9087    B1 01 64 20
-  908B    D0 B1 02 C0
-  908F    D1 4F 64 C0
+  9087    B1 01 64 20           
+  908B    D0 B1 02 C0           
+  908F    D1 4F 64 C0           
   9093    D9 45 26 B1           	DB	0D9H,45H,26H,0B1H,01H,64H,20H,0D0H,0B1H,02H,0C0H,0F0H,02H,0B9H,00H,34H
-  9097    01 64 20 D0
-  909B    B1 02 C0 F0
-  909F    02 B9 00 34
+  9097    01 64 20 D0           
+  909B    B1 02 C0 F0           
+  909F    02 B9 00 34           
   90A3    68 C0 F5 12           	DB	68H,0C0H,0F5H,12H,0B9H,00H,46H,26H,0B1H,01H,63H,20H,0D0H,0B1H,02H,0C0H
-  90A7    B9 00 46 26
-  90AB    B1 01 63 20
-  90AF    D0 B1 02 C0
+  90A7    B9 00 46 26           
+  90AB    B1 01 63 20           
+  90AF    D0 B1 02 C0           
   90B3    B9 00 23 26           	DB	0B9H,00H,23H,26H,0B1H,01H,63H,20H,0D0H,0B1H,02H,0C0H,0B9H,00H,46H,26H
-  90B7    B1 01 63 20
-  90BB    D0 B1 02 C0
-  90BF    B9 00 46 26
+  90B7    B1 01 63 20           
+  90BB    D0 B1 02 C0           
+  90BF    B9 00 46 26           
   90C3    B1 01 63 20           	DB	0B1H,01H,63H,20H,0D0H,0B1H,02H,0C0H,0B9H,00H,34H,68H,0F0H,18H,74H,00H
-  90C7    D0 B1 02 C0
-  90CB    B9 00 34 68
-  90CF    F0 18 74 00
+  90C7    D0 B1 02 C0           
+  90CB    B9 00 34 68           
+  90CF    F0 18 74 00           
   90D3    F1 04 CF B1           	DB	0F1H,04H,0CFH,0B1H,04H,6AH,0F5H,12H,0B9H,00H,68H,0B1H,02H,9FH,0F1H,04H
-  90D7    04 6A F5 12
-  90DB    B9 00 68 B1
-  90DF    02 9F F1 04
+  90D7    04 6A F5 12           
+  90DB    B9 00 68 B1           
+  90DF    02 9F F1 04           
   90E3    6A F5 12 B9           	DB	6AH,0F5H,12H,0B9H,00H,34H,68H,0C0H,0B9H,00H,1AH,68H,0C0H,0B9H,00H,2CH
-  90E7    00 34 68 C0
-  90EB    B9 00 1A 68
-  90EF    C0 B9 00 2C
+  90E7    00 34 68 C0           
+  90EB    B9 00 1A 68           
+  90EF    C0 B9 00 2C           
   90F3    6B C0 B9 00           	DB	6BH,0C0H,0B9H,00H,16H,9FH,0C0H,0B9H,00H,34H,68H,0C0H,0B9H,00H,1AH,68H
-  90F7    16 9F C0 B9
-  90FB    00 34 68 C0
-  90FF    B9 00 1A 68
+  90F7    16 9F C0 B9           
+  90FB    00 34 68 C0           
+  90FF    B9 00 1A 68           
   9103    C0 B9 00 42           	DB	0C0H,0B9H,00H,42H,64H,0C0H,9FH,0C0H,64H,0C0H,0B9H,00H,34H,68H,0C0H,0B9H
-  9107    64 C0 9F C0
-  910B    64 C0 B9 00
-  910F    34 68 C0 B9
+  9107    64 C0 9F C0           
+  910B    64 C0 B9 00           
+  910F    34 68 C0 B9           
   9113    00 46 B1 01           	DB	00H,46H,0B1H,01H,63H,0F0H,08H,0B9H,00H,46H,0B1H,05H,57H,0F5H,12H,0B9H
-  9117    63 F0 08 B9
-  911B    00 46 B1 05
-  911F    57 F5 12 B9
+  9117    63 F0 08 B9           
+  911B    00 46 B1 05           
+  911F    57 F5 12 B9           
   9123    00 00 05 B1           	DB	00H,00H,05H,0B1H,02H,63H,02H,00H,0B1H,04H,0C0H,0B9H,00H,46H,0B1H,02H
-  9127    02 63 02 00
-  912B    B1 04 C0 B9
-  912F    00 46 B1 02
+  9127    02 63 02 00           
+  912B    B1 04 C0 B9           
+  912F    00 46 B1 02           
   9133    63 F0 18 74           	DB	63H,0F0H,18H,74H,00H,0F1H,04H,0CFH,0B1H,04H,6AH,0F5H,12H,0B9H,00H,68H
-  9137    00 F1 04 CF
-  913B    B1 04 6A F5
-  913F    12 B9 00 68
+  9137    00 F1 04 CF           
+  913B    B1 04 6A F5           
+  913F    12 B9 00 68           
   9143    25 B1 01 9F           	DB	25H,0B1H,01H,9FH,20H,0D0H,0F1H,04H,0B1H,02H,6AH,0F5H,12H,0B9H,00H,34H
-  9147    20 D0 F1 04
-  914B    B1 02 6A F5
-  914F    12 B9 00 34
+  9147    20 D0 F1 04           
+  914B    B1 02 6A F5           
+  914F    12 B9 00 34           
   9153    68 B0 CB 93           	DB	68H,0B0H,0CBH,93H,0B9H,00H,1AH,0CFH,25H,0B1H,01H,68H,20H,0D0H,0B0H,0CBH
-  9157    B9 00 1A CF
-  915B    25 B1 01 68
-  915F    20 D0 B0 CB
+  9157    B9 00 1A CF           
+  915B    25 B1 01 68           
+  915F    20 D0 B0 CB           
   9163    B1 02 68 B9           	DB	0B1H,02H,68H,0B9H,00H,2CH,0CFH,6BH,0B0H,0CBH,68H,0B9H,00H,16H,0CFH,25H
-  9167    00 2C CF 6B
-  916B    B0 CB 68 B9
-  916F    00 16 CF 25
+  9167    00 2C CF 6B           
+  916B    B0 CB 68 B9           
+  916F    00 16 CF 25           
   9173    B1 01 9F 20           	DB	0B1H,01H,9FH,20H,0D0H,0B0H,0CBH,0B1H,02H,6BH,0B9H,00H,34H,0CFH,68H,0B0H
-  9177    D0 B0 CB B1
-  917B    02 6B B9 00
-  917F    34 CF 68 B0
+  9177    D0 B0 CB B1           
+  917B    02 6B B9 00           
+  917F    34 CF 68 B0           
   9183    CB 93 B9 00           	DB	0CBH,93H,0B9H,00H,1AH,0CFH,25H,0B1H,01H,68H,20H,0D0H,0B0H,0CBH,0B1H,02H
-  9187    1A CF 25 B1
-  918B    01 68 20 D0
-  918F    B0 CB B1 02
+  9187    1A CF 25 B1           
+  918B    01 68 20 D0           
+  918F    B0 CB B1 02           
   9193    68 B9 00 42           	DB	68H,0B9H,00H,42H,0CFH,64H,0B0H,0CBH,68H,0B9H,00H,42H,42H,0CFH,25H,0B1H
-  9197    CF 64 B0 CB
-  919B    68 B9 00 42
-  919F    42 CF 25 B1
+  9197    CF 64 B0 CB           
+  919B    68 B9 00 42           
+  919F    42 CF 25 B1           
   91A3    01 A0 20 D0           	DB	01H,0A0H,20H,0D0H,0B0H,45H,0CBH,0B1H,02H,64H,0B9H,00H,42H,0CFH,64H,0B0H
-  91A7    B0 45 CB B1
-  91AB    02 64 B9 00
-  91AF    42 CF 64 B0
+  91A7    B0 45 CB B1           
+  91AB    02 64 B9 00           
+  91AF    42 CF 64 B0           
   91B3    CB 94 B9 00           	DB	0CBH,94H,0B9H,00H,34H,0CFH,25H,0B1H,01H,68H,20H,0D0H,0B0H,0CBH,0B1H,02H
-  91B7    34 CF 25 B1
-  91BB    01 68 20 D0
-  91BF    B0 CB B1 02
+  91B7    34 CF 25 B1           
+  91BB    01 68 20 D0           
+  91BF    B0 CB B1 02           
   91C3    64 B9 00 46           	DB	64H,0B9H,00H,46H,0CFH,0B1H,01H,63H,0F0H,08H,0B9H,00H,46H,0B1H,03H,57H
-  91C7    CF B1 01 63
-  91CB    F0 08 B9 00
-  91CF    46 B1 03 57
+  91C7    CF B1 01 63           
+  91CB    F0 08 B9 00           
+  91CF    46 B1 03 57           
   91D3    F5 12 B9 00           	DB	0F5H,12H,0B9H,00H,23H,25H,0B1H,01H,9DH,20H,0D0H,0B0H,0CBH,0B1H,02H,63H
-  91D7    23 25 B1 01
-  91DB    9D 20 D0 B0
-  91DF    CB B1 02 63
+  91D7    23 25 B1 01           
+  91DB    9D 20 D0 B0           
+  91DF    CB B1 02 63           
   91E3    B9 00 46 CF           	DB	0B9H,00H,46H,0CFH,63H,0B0H,0CBH,91H,0B9H,00H,34H,0CFH,68H,0B0H,0CBH,63H
-  91E7    63 B0 CB 91
-  91EB    B9 00 34 CF
-  91EF    68 B0 CB 63
+  91E7    63 B0 CB 91           
+  91EB    B9 00 34 CF           
+  91EF    68 B0 CB 63           
   91F3    00 F1 04 CF           	DB	00H,0F1H,04H,0CFH,0B1H,04H,6AH,0F5H,12H,0B9H,00H,68H,25H,0B1H,01H,9FH
-  91F7    B1 04 6A F5
-  91FB    12 B9 00 68
-  91FF    25 B1 01 9F
+  91F7    B1 04 6A F5           
+  91FB    12 B9 00 68           
+  91FF    25 B1 01 9F           
   9203    20 D0 F1 04           	DB	20H,0D0H,0F1H,04H,0B1H,02H,6AH,0F5H,12H,0B9H,00H,34H,68H,0B0H,0CBH,93H
-  9207    B1 02 6A F5
-  920B    12 B9 00 34
-  920F    68 B0 CB 93
+  9207    B1 02 6A F5           
+  920B    12 B9 00 34           
+  920F    68 B0 CB 93           
   9213    B9 00 1A CF           	DB	0B9H,00H,1AH,0CFH,25H,0B1H,01H,68H,20H,0D0H,0B0H,0CBH,0B1H,02H,68H,0B9H
-  9217    25 B1 01 68
-  921B    20 D0 B0 CB
-  921F    B1 02 68 B9
+  9217    25 B1 01 68           
+  921B    20 D0 B0 CB           
+  921F    B1 02 68 B9           
   9223    00 2C CF 6B           	DB	00H,2CH,0CFH,6BH,0B0H,0CBH,68H,0B9H,00H,16H,0CFH,25H,0B1H,01H,9FH,20H
-  9227    B0 CB 68 B9
-  922B    00 16 CF 25
-  922F    B1 01 9F 20
+  9227    B0 CB 68 B9           
+  922B    00 16 CF 25           
+  922F    B1 01 9F 20           
   9233    D0 B0 CB B1           	DB	0D0H,0B0H,0CBH,0B1H,02H,6BH,0B9H,00H,34H,0CFH,68H,0B0H,0CBH,93H,0B9H,00H
-  9237    02 6B B9 00
-  923B    34 CF 68 B0
-  923F    CB 93 B9 00
+  9237    02 6B B9 00           
+  923B    34 CF 68 B0           
+  923F    CB 93 B9 00           
   9243    1A CF 25 B1           	DB	1AH,0CFH,25H,0B1H,01H,68H,20H,0D0H,0B0H,0CBH,0B1H,02H,68H,0B9H,00H,42H
-  9247    01 68 20 D0
-  924B    B0 CB B1 02
-  924F    68 B9 00 42
+  9247    01 68 20 D0           
+  924B    B0 CB B1 02           
+  924F    68 B9 00 42           
   9253    CF 64 B0 CB           	DB	0CFH,64H,0B0H,0CBH,23H,68H,0B9H,00H,42H,42H,0CFH,25H,0B1H,01H,0A0H,23H
-  9257    23 68 B9 00
-  925B    42 42 CF 25
-  925F    B1 01 A0 23
+  9257    23 68 B9 00           
+  925B    42 42 CF 25           
+  925F    B1 01 A0 23           
   9263    D0 B0 45 CB           	DB	0D0H,0B0H,45H,0CBH,0B1H,02H,64H,0B9H,00H,42H,0CFH,24H,64H,0B0H,0CBH,94H
-  9267    B1 02 64 B9
-  926B    00 42 CF 24
-  926F    64 B0 CB 94
+  9267    B1 02 64 B9           
+  926B    00 42 CF 24           
+  926F    64 B0 CB 94           
   9273    B9 00 34 CF           	DB	0B9H,00H,34H,0CFH,25H,68H,0B0H,0CBH,64H,0B9H,00H,46H,0CFH,0B1H,01H,63H
-  9277    25 68 B0 CB
-  927B    64 B9 00 46
-  927F    CF B1 01 63
+  9277    25 68 B0 CB           
+  927B    64 B9 00 46           
+  927F    CF B1 01 63           
   9283    F0 08 B9 00           	DB	0F0H,08H,0B9H,00H,46H,0B1H,03H,57H,0F5H,12H,0B9H,00H,23H,0B1H,01H,9DH
-  9287    46 B1 03 57
-  928B    F5 12 B9 00
-  928F    23 B1 01 9D
+  9287    46 B1 03 57           
+  928B    F5 12 B9 00           
+  928F    23 B1 01 9D           
   9293    20 D0 B0 CB           	DB	20H,0D0H,0B0H,0CBH,0B1H,02H,63H,0F0H,0EH,0CFH,28H,74H,29H,0D0H,2AH,0D0H
-  9297    B1 02 63 F0
-  929B    0E CF 28 74
-  929F    29 D0 2A D0
+  9297    B1 02 63 F0           
+  929B    0E CF 28 74           
+  929F    29 D0 2A D0           
   92A3    2B D0 00 F1           	DB	2BH,0D0H,00H,0F1H,04H,0CFH,0B1H,08H,6AH,0D1H,42H,83H,43H,0B1H,04H,83H
-  92A7    04 CF B1 08
-  92AB    6A D1 42 83
-  92AF    43 B1 04 83
+  92A7    04 CF B1 08           
+  92AB    6A D1 42 83           
+  92AF    43 B1 04 83           
   92B3    42 C9 83 43           	DB	42H,0C9H,83H,43H,0CFH,80H,42H,83H,0D2H,41H,23H,0B1H,01H,6AH,0F0H,0EH
-  92B7    CF 80 42 83
-  92BB    D2 41 23 B1
-  92BF    01 6A F0 0E
+  92B7    CF 80 42 83           
+  92BB    D2 41 23 B1           
+  92BF    01 6A F0 0E           
   92C3    03 B1 04 74           	DB	03H,0B1H,04H,74H,03H,24H,0B1H,02H,0D0H,25H,0B1H,01H,0D0H,0D1H,42H,20H
-  92C7    03 24 B1 02
-  92CB    D0 25 B1 01
-  92CF    D0 D1 42 20
+  92C7    03 24 B1 02           
+  92CB    D0 25 B1 01           
+  92CF    D0 D1 42 20           
   92D3    B1 08 83 43           	DB	0B1H,08H,83H,43H,0B1H,04H,83H,42H,82H,43H,0C9H,83H,42H,82H,00H,0F1H
-  92D7    B1 04 83 42
-  92DB    82 43 C9 83
-  92DF    42 82 00 F1
+  92D7    B1 04 83 42           
+  92DB    82 43 C9 83           
+  92DF    42 82 00 F1           
   92E3    04 CF B1 04           	DB	04H,0CFH,0B1H,04H,6AH,0D1H,42H,83H,43H,83H,42H,80H,43H,83H,42H,0C9H
-  92E7    6A D1 42 83
-  92EB    43 83 42 80
-  92EF    43 83 42 C9
+  92E7    6A D1 42 83           
+  92EB    43 83 42 80           
+  92EF    43 83 42 C9           
   92F3    80 43 CF 80           	DB	80H,43H,0CFH,80H,42H,83H,0D2H,41H,24H,0B1H,01H,68H,0F0H,0EH,03H,0B1H
-  92F7    42 83 D2 41
-  92FB    24 B1 01 68
-  92FF    F0 0E 03 B1
+  92F7    42 83 D2 41           
+  92FB    24 B1 01 68           
+  92FF    F0 0E 03 B1           
   9303    03 74 03 25           	DB	03H,74H,03H,25H,0B1H,02H,0D0H,26H,0D0H,0D1H,43H,20H,01H,0B1H,01H,84H
-  9307    B1 02 D0 26
-  930B    D0 D1 43 20
-  930F    01 B1 01 84
+  9307    B1 02 D0 26           
+  930B    D0 D1 43 20           
+  930F    01 B1 01 84           
   9313    01 FC FF 40           	DB	01H,0FCH,0FFH,40H,0B1H,07H,85H,43H,0B1H,04H,83H,42H,82H,43H,0C9H,83H
-  9317    B1 07 85 43
-  931B    B1 04 83 42
-  931F    82 43 C9 83
+  9317    B1 07 85 43           
+  931B    B1 04 83 42           
+  931F    82 43 C9 83           
   9323    42 82 00 F1           	DB	42H,82H,00H,0F1H,04H,0CFH,0B1H,04H,6AH,0D9H,42H,83H,0D1H,43H,80H,0D9H
-  9327    04 CF B1 04
-  932B    6A D9 42 83
-  932F    D1 43 80 D9
+  9327    04 CF B1 04           
+  932B    6A D9 42 83           
+  932F    D1 43 80 D9           
   9333    42 83 D1 43           	DB	42H,83H,0D1H,43H,0C9H,80H,0DFH,42H,0CFH,83H,0D1H,43H,83H,0D9H,80H,0D2H
-  9337    C9 80 DF 42
-  933B    CF 83 D1 43
-  933F    83 D9 80 D2
+  9337    C9 80 DF 42           
+  933B    CF 83 D1 43           
+  933F    83 D9 80 D2           
   9343    41 23 B1 01           	DB	41H,23H,0B1H,01H,6AH,0F0H,0EH,03H,0B1H,03H,74H,03H,0DEH,42H,0B1H,01H
-  9347    6A F0 0E 03
-  934B    B1 03 74 03
-  934F    DE 42 B1 01
+  9347    6A F0 0E 03           
+  934B    B1 03 74 03           
+  934F    DE 42 B1 01           
   9353    83 24 B1 02           	DB	83H,24H,0B1H,02H,0D0H,25H,0B1H,01H,0D0H,0D1H,20H,0B1H,04H,85H,0D9H,83H
-  9357    D0 25 B1 01
-  935B    D0 D1 20 B1
-  935F    04 85 D9 83
+  9357    D0 25 B1 01           
+  935B    D0 D1 20 B1           
+  935F    04 85 D9 83           
   9363    D2 41 23 B1           	DB	0D2H,41H,23H,0B1H,01H,6AH,0F0H,0EH,03H,0B1H,03H,74H,03H,0DEH,42H,0B1H
-  9367    01 6A F0 0E
-  936B    03 B1 03 74
-  936F    03 DE 42 B1
+  9367    01 6A F0 0E           
+  936B    03 B1 03 74           
+  936F    03 DE 42 B1           
   9373    01 82 24 B1           	DB	01H,82H,24H,0B1H,02H,0D0H,25H,0B1H,01H,0D0H,0D1H,43H,0C9H,20H,0B1H,04H
-  9377    02 D0 25 B1
-  937B    01 D0 D1 43
-  937F    C9 20 B1 04
+  9377    02 D0 25 B1           
+  937B    01 D0 D1 43           
+  937F    C9 20 B1 04           
   9383    83 DF 42 CF           	DB	83H,0DFH,42H,0CFH,82H,00H,0F1H,04H,0CFH,0B1H,04H,6AH,0D9H,42H,83H,43H
-  9387    82 00 F1 04
-  938B    CF B1 04 6A
-  938F    D9 42 83 43
+  9387    82 00 F1 04           
+  938B    CF B1 04 6A           
+  938F    D9 42 83 43           
   9393    D0 42 80 D1           	DB	0D0H,42H,80H,0D1H,43H,83H,0DFH,42H,80H,0D1H,43H,80H,0D9H,42H,83H,0D2H
-  9397    43 83 DF 42
-  939B    80 D1 43 80
-  939F    D9 42 83 D2
+  9397    43 83 DF 42           
+  939B    80 D1 43 80           
+  939F    D9 42 83 D2           
   93A3    41 24 B1 01           	DB	41H,24H,0B1H,01H,68H,0F0H,0EH,03H,0B1H,03H,74H,03H,25H,0B1H,02H,0D0H
-  93A7    68 F0 0E 03
-  93AB    B1 03 74 03
-  93AF    25 B1 02 D0
+  93A7    68 F0 0E 03           
+  93AB    B1 03 74 03           
+  93AF    25 B1 02 D0           
   93B3    26 D0 D1 43           	DB	26H,0D0H,0D1H,43H,20H,01H,0B1H,01H,84H,01H,0FCH,0FFH,40H,0B1H,03H,85H
-  93B7    20 01 B1 01
-  93BB    84 01 FC FF
-  93BF    40 B1 03 85
+  93B7    20 01 B1 01           
+  93BB    84 01 FC FF           
+  93BF    40 B1 03 85           
   93C3    D7 24 B1 04           	DB	0D7H,24H,0B1H,04H,74H,0DEH,43H,25H,0B1H,02H,83H,26H,0D0H,0D1H,42H,20H
-  93C7    74 DE 43 25
-  93CB    B1 02 83 26
-  93CF    D0 D1 42 20
+  93C7    74 DE 43 25           
+  93CB    B1 02 83 26           
+  93CF    D0 D1 42 20           
   93D3    B1 04 82 DF           	DB	0B1H,04H,82H,0DFH,43H,26H,0B1H,01H,83H,20H,0B1H,03H,0D0H,0D1H,42H,0C9H
-  93D7    43 26 B1 01
-  93DB    83 20 B1 03
-  93DF    D0 D1 42 C9
+  93D7    43 26 B1 01           
+  93DB    83 20 B1 03           
+  93DF    D0 D1 42 C9           
   93E3    B1 04 82 00           	DB	0B1H,04H,82H,00H,0F2H,1CH,0CFH,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0D9H
-  93E7    F2 1C CF 23
-  93EB    B1 01 93 20
-  93EF    B1 03 D0 D9
+  93E7    F2 1C CF 23           
+  93EB    B1 01 93 20           
+  93EF    B1 03 D0 D9           
   93F3    23 B1 01 93           	DB	23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DEH,23H,0B1H,01H,8FH,20H,0B1H,03H
-  93F7    20 B1 03 D0
-  93FB    DE 23 B1 01
-  93FF    8F 20 B1 03
+  93F7    20 B1 03 D0           
+  93FB    DE 23 B1 01           
+  93FF    8F 20 B1 03           
   9403    D0 DF 23 B1           	DB	0D0H,0DFH,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DEH,23H,0B1H,01H,93H,20H
-  9407    01 93 20 B1
-  940B    03 D0 DE 23
-  940F    B1 01 93 20
+  9407    01 93 20 B1           
+  940B    03 D0 DE 23           
+  940F    B1 01 93 20           
   9413    B1 03 D0 D9           	DB	0B1H,03H,0D0H,0D9H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DEH,23H,0B1H,01H
-  9417    23 B1 01 93
-  941B    20 B1 03 D0
-  941F    DE 23 B1 01
+  9417    23 B1 01 93           
+  941B    20 B1 03 D0           
+  941F    DE 23 B1 01           
   9423    8F 20 B1 03           	DB	8FH,20H,0B1H,03H,0D0H,0D9H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0E0H,23H
-  9427    D0 D9 23 B1
-  942B    01 93 20 B1
-  942F    03 D0 E0 23
+  9427    D0 D9 23 B1           
+  942B    01 93 20 B1           
+  942F    03 D0 E0 23           
   9433    B1 01 8F 20           	DB	0B1H,01H,8FH,20H,0B1H,03H,0D0H,0D9H,23H,0B1H,01H,91H,20H,0B1H,03H,0D0H
-  9437    B1 03 D0 D9
-  943B    23 B1 01 91
-  943F    20 B1 03 D0
+  9437    B1 03 D0 D9           
+  943B    23 B1 01 91           
+  943F    20 B1 03 D0           
   9443    E0 23 B1 01           	DB	0E0H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DFH,23H,0B1H,01H,91H,20H,0B1H
-  9447    93 20 B1 03
-  944B    D0 DF 23 B1
-  944F    01 91 20 B1
+  9447    93 20 B1 03           
+  944B    D0 DF 23 B1           
+  944F    01 91 20 B1           
   9453    03 D0 E0 23           	DB	03H,0D0H,0E0H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DFH,23H,0B1H,01H,91H
-  9457    B1 01 93 20
-  945B    B1 03 D0 DF
-  945F    23 B1 01 91
+  9457    B1 01 93 20           
+  945B    B1 03 D0 DF           
+  945F    23 B1 01 91           
   9463    20 B1 03 D0           	DB	20H,0B1H,03H,0D0H,0E0H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DFH,23H,0B1H
-  9467    E0 23 B1 01
-  946B    93 20 B1 03
-  946F    D0 DF 23 B1
+  9467    E0 23 B1 01           
+  946B    93 20 B1 03           
+  946F    D0 DF 23 B1           
   9473    01 91 20 B1           	DB	01H,91H,20H,0B1H,03H,0D0H,00H,0F2H,1CH,0CFH,23H,0B1H,01H,93H,20H,0B1H
-  9477    03 D0 00 F2
-  947B    1C CF 23 B1
-  947F    01 93 20 B1
+  9477    03 D0 00 F2           
+  947B    1C CF 23 B1           
+  947F    01 93 20 B1           
   9483    03 D0 D9 23           	DB	03H,0D0H,0D9H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DEH,23H,0B1H,01H,8FH
-  9487    B1 01 93 20
-  948B    B1 03 D0 DE
-  948F    23 B1 01 8F
+  9487    B1 01 93 20           
+  948B    B1 03 D0 DE           
+  948F    23 B1 01 8F           
   9493    20 B1 03 D0           	DB	20H,0B1H,03H,0D0H,0DFH,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DEH,23H,0B1H
-  9497    DF 23 B1 01
-  949B    93 20 B1 03
-  949F    D0 DE 23 B1
+  9497    DF 23 B1 01           
+  949B    93 20 B1 03           
+  949F    D0 DE 23 B1           
   94A3    01 93 20 B1           	DB	01H,93H,20H,0B1H,03H,0D0H,0D9H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0DEH
-  94A7    03 D0 D9 23
-  94AB    B1 01 93 20
-  94AF    B1 03 D0 DE
+  94A7    03 D0 D9 23           
+  94AB    B1 01 93 20           
+  94AF    B1 03 D0 DE           
   94B3    23 B1 01 8F           	DB	23H,0B1H,01H,8FH,20H,0B1H,03H,0D0H,0D9H,23H,0B1H,01H,93H,20H,0B1H,03H
-  94B7    20 B1 03 D0
-  94BB    D9 23 B1 01
-  94BF    93 20 B1 03
+  94B7    20 B1 03 D0           
+  94BB    D9 23 B1 01           
+  94BF    93 20 B1 03           
   94C3    D0 E0 23 B1           	DB	0D0H,0E0H,23H,0B1H,01H,8FH,20H,0B1H,03H,0D0H,0D9H,23H,0B1H,01H,94H,20H
-  94C7    01 8F 20 B1
-  94CB    03 D0 D9 23
-  94CF    B1 01 94 20
+  94C7    01 8F 20 B1           
+  94CB    03 D0 D9 23           
+  94CF    B1 01 94 20           
   94D3    B1 03 D0 E0           	DB	0B1H,03H,0D0H,0E0H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H,0D9H,23H,0B1H,01H
-  94D7    23 B1 01 93
-  94DB    20 B1 03 D0
-  94DF    D9 23 B1 01
+  94D7    23 B1 01 93           
+  94DB    20 B1 03 D0           
+  94DF    D9 23 B1 01           
   94E3    93 20 B1 03           	DB	93H,20H,0B1H,03H,0D0H,0E0H,23H,0B1H,01H,94H,20H,0B1H,03H,0D0H,0D9H,23H
-  94E7    D0 E0 23 B1
-  94EB    01 94 20 B1
-  94EF    03 D0 D9 23
+  94E7    D0 E0 23 B1           
+  94EB    01 94 20 B1           
+  94EF    03 D0 D9 23           
   94F3    B1 01 91 20           	DB	0B1H,01H,91H,20H,0B1H,03H,0D0H,0E0H,23H,0B1H,01H,93H,20H,0B1H,03H,0D0H
-  94F7    B1 03 D0 E0
-  94FB    23 B1 01 93
-  94FF    20 B1 03 D0
+  94F7    B1 03 D0 E0           
+  94FB    23 B1 01 93           
+  94FF    20 B1 03 D0           
   9503    DF 23 B1 01           	DB	0DFH,23H,0B1H,01H,91H,20H,0B1H,03H,0D0H,00H,0F2H,1CH,0CFH,23H,0B1H,04H
-  9507    91 20 B1 03
-  950B    D0 00 F2 1C
-  950F    CF 23 B1 04
+  9507    91 20 B1 03           
+  950B    D0 00 F2 1C           
+  950F    CF 23 B1 04           
   9513    93 D9 24 93           	DB	93H,0D9H,24H,93H,0DEH,25H,8FH,0DFH,93H,0DEH,26H,93H,0D9H,27H,93H,0DEH
-  9517    DE 25 8F DF
-  951B    93 DE 26 93
-  951F    D9 27 93 DE
+  9517    DE 25 8F DF           
+  951B    93 DE 26 93           
+  951F    D9 27 93 DE           
   9523    28 8F 18 00           	DB	28H,8FH,18H,00H,46H,12H,29H,0B1H,02H,93H,0B0H,40H,0D0H,0E0H,42H,2AH
-  9527    46 12 29 B1
-  952B    02 93 B0 40
-  952F    D0 E0 42 2A
+  9527    46 12 29 B1           
+  952B    02 93 B0 40           
+  952F    D0 E0 42 2A           
   9533    B1 04 8F 18           	DB	0B1H,04H,8FH,18H,00H,42H,12H,0B1H,02H,94H,0B0H,40H,0D0H,0E0H,42H,0B1H
-  9537    00 42 12 B1
-  953B    02 94 B0 40
-  953F    D0 E0 42 B1
+  9537    00 42 12 B1           
+  953B    02 94 B0 40           
+  953F    D0 E0 42 B1           
   9543    04 93 18 00           	DB	04H,93H,18H,00H,46H,12H,0B1H,02H,93H,0B0H,40H,0D0H,0E0H,42H,0B1H,04H
-  9547    46 12 B1 02
-  954B    93 B0 40 D0
-  954F    E0 42 B1 04
+  9547    46 12 B1 02           
+  954B    93 B0 40 D0           
+  954F    E0 42 B1 04           
   9553    94 18 00 4E           	DB	94H,18H,00H,4EH,12H,0B1H,02H,91H,0B0H,40H,0D0H,0D7H,0B1H,04H,74H,0DCH
-  9557    12 B1 02 91
-  955B    B0 40 D0 D7
-  955F    B1 04 74 DC
+  9557    12 B1 02 91           
+  955B    B0 40 D0 D7           
+  955F    B1 04 74 DC           
   9563    CC 28 B1 01           	DB	0CCH,28H,0B1H,01H,74H,0CDH,27H,0D0H,0CEH,25H,0D0H,0CFH,23H,0D0H,00H,0F0H
-  9567    74 CD 27 D0
-  956B    CE 25 D0 CF
-  956F    23 D0 00 F0
+  9567    74 CD 27 D0           
+  956B    CE 25 D0 CF           
+  956F    23 D0 00 F0           
   9573    0A CF B1 01           	DB	0AH,0CFH,0B1H,01H,74H,18H,00H,68H,08H,0B1H,07H,63H,0B0H,0B1H,02H,50H
-  9577    74 18 00 68
-  957B    08 B1 07 63
-  957F    B0 B1 02 50
+  9577    74 18 00 68           
+  957B    08 B1 07 63           
+  957F    B0 B1 02 50           
   9583    C0 5C C0 53           	DB	0C0H,5CH,0C0H,53H,0C0H,5FH,0C0H,50H,0C0H,5CH,0B1H,0AH,0C0H,0B1H,02H,58H
-  9587    C0 5F C0 50
-  958B    C0 5C B1 0A
-  958F    C0 B1 02 58
+  9587    C0 5F C0 50           
+  958B    C0 5C B1 0A           
+  958F    C0 B1 02 58           
   9593    C0 5C C0 57           	DB	0C0H,5CH,0C0H,57H,0C0H,63H,0C0H,57H,0C0H,5AH,0C0H,00H,0F0H,0AH,0CFH,0B1H
-  9597    C0 63 C0 57
-  959B    C0 5A C0 00
-  959F    F0 0A CF B1
+  9597    C0 63 C0 57           
+  959B    C0 5A C0 00           
+  959F    F0 0A CF B1           
   95A3    01 74 18 00           	DB	01H,74H,18H,00H,68H,08H,0B1H,07H,63H,0B0H,43H,0B1H,02H,50H,0C0H,5CH
-  95A7    68 08 B1 07
-  95AB    63 B0 43 B1
-  95AF    02 50 C0 5C
+  95A7    68 08 B1 07           
+  95AB    63 B0 43 B1           
+  95AF    02 50 C0 5C           
   95B3    C8 50 CF 53           	DB	0C8H,50H,0CFH,53H,0C8H,5CH,0CFH,5FH,0C8H,53H,0CFH,50H,0C8H,5FH,0CFH,5CH
-  95B7    C8 5C CF 5F
-  95BB    C8 53 CF 50
-  95BF    C8 5F CF 5C
+  95B7    C8 5C CF 5F           
+  95BB    C8 53 CF 50           
+  95BF    C8 5F CF 5C           
   95C3    B1 04 C0 C8           	DB	0B1H,04H,0C0H,0C8H,0B1H,02H,5CH,0C0H,50H,0CFH,58H,0C0H,5CH,0C8H,58H,0CFH
-  95C7    B1 02 5C C0
-  95CB    50 CF 58 C0
-  95CF    5C C8 58 CF
+  95C7    B1 02 5C C0           
+  95CB    50 CF 58 C0           
+  95CF    5C C8 58 CF           
   95D3    57 C8 5C CF           	DB	57H,0C8H,5CH,0CFH,63H,0C8H,57H,0CFH,57H,0C8H,63H,0CFH,5AH,0C8H,57H,00H
-  95D7    63 C8 57 CF
-  95DB    57 C8 63 CF
-  95DF    5A C8 57 00
+  95D7    63 C8 57 CF           
+  95DB    57 C8 63 CF           
+  95DF    5A C8 57 00           
   95E3    F0 0A CF B1           	DB	0F0H,0AH,0CFH,0B1H,01H,74H,18H,00H,68H,08H,0B1H,03H,63H,0DAH,0B1H,02H
-  95E7    01 74 18 00
-  95EB    68 08 B1 03
-  95EF    63 DA B1 02
+  95E7    01 74 18 00           
+  95EB    68 08 B1 03           
+  95EF    63 DA B1 02           
   95F3    74 10 0A B1           	DB	74H,10H,0AH,0B1H,01H,74H,18H,00H,68H,08H,63H,0D8H,44H,0B1H,04H,74H
-  95F7    01 74 18 00
-  95FB    68 08 63 D8
-  95FF    44 B1 04 74
+  95F7    01 74 18 00           
+  95FB    68 08 63 D8           
+  95FF    44 B1 04 74           
   9603    DA B1 02 74           	DB	0DAH,0B1H,02H,74H,0F0H,0AH,0B1H,01H,74H,18H,00H,68H,08H,63H,0B0H,0B1H
-  9607    F0 0A B1 01
-  960B    74 18 00 68
-  960F    08 63 B0 B1
+  9607    F0 0A B1 01           
+  960B    74 18 00 68           
+  960F    08 63 B0 B1           
   9613    02 50 D8 44           	DB	02H,50H,0D8H,44H,74H,0F0H,0AH,0B1H,01H,74H,18H,00H,68H,08H,0B1H,03H
-  9617    74 F0 0A B1
-  961B    01 74 18 00
-  961F    68 08 B1 03
+  9617    74 F0 0A B1           
+  961B    01 74 18 00           
+  961F    68 08 B1 03           
   9623    63 D8 44 B1           	DB	63H,0D8H,44H,0B1H,02H,74H,0F0H,0AH,0B1H,01H,74H,18H,00H,68H,08H,63H
-  9627    02 74 F0 0A
-  962B    B1 01 74 18
-  962F    00 68 08 63
+  9627    02 74 F0 0A           
+  962B    B1 01 74 18           
+  962F    00 68 08 63           
   9633    10 14 B1 02           	DB	10H,14H,0B1H,02H,74H,0DCH,74H,0D5H,0B1H,01H,74H,18H,00H,42H,08H,58H
-  9637    74 DC 74 D5
-  963B    B1 01 74 18
-  963F    00 42 08 58
+  9637    74 DC 74 D5           
+  963B    B1 01 74 18           
+  963F    00 42 08 58           
   9643    D8 44 B1 02           	DB	0D8H,44H,0B1H,02H,74H,0F0H,0AH,0B1H,01H,74H,18H,00H,42H,08H,0B1H,03H
-  9647    74 F0 0A B1
-  964B    01 74 18 00
-  964F    42 08 B1 03
+  9647    74 F0 0A B1           
+  964B    01 74 18 00           
+  964F    42 08 B1 03           
   9653    58 D8 44 B1           	DB	58H,0D8H,44H,0B1H,02H,74H,0F0H,0AH,0B1H,01H,74H,18H,00H,42H,08H,58H
-  9657    02 74 F0 0A
-  965B    B1 01 74 18
-  965F    00 42 08 58
+  9657    02 74 F0 0A           
+  965B    B1 01 74 18           
+  965F    00 42 08 58           
   9663    10 14 B1 02           	DB	10H,14H,0B1H,02H,74H,0D8H,44H,74H,0F0H,0AH,0B1H,01H,74H,18H,00H,46H
-  9667    74 D8 44 74
-  966B    F0 0A B1 01
-  966F    74 18 00 46
+  9667    74 D8 44 74           
+  966B    F0 0A B1 01           
+  966F    74 18 00 46           
   9673    08 57 D8 44           	DB	08H,57H,0D8H,44H,0B1H,02H,74H,0DAH,74H,0F0H,0AH,0B1H,01H,74H,18H,00H
-  9677    B1 02 74 DA
-  967B    74 F0 0A B1
-  967F    01 74 18 00
+  9677    B1 02 74 DA           
+  967B    74 F0 0A B1           
+  967F    01 74 18 00           
   9683    46 08 57 D8           	DB	46H,08H,57H,0D8H,44H,0B1H,02H,74H,74H,0DCH,0B1H,04H,74H,00H,0F0H,0AH
-  9687    44 B1 02 74
-  968B    74 DC B1 04
-  968F    74 00 F0 0A
+  9687    44 B1 02 74           
+  968B    74 DC B1 04           
+  968F    74 00 F0 0A           
   9693    CF B1 01 74           	DB	0CFH,0B1H,01H,74H,18H,00H,68H,08H,0B1H,07H,63H,0B0H,43H,0B1H,02H,50H
-  9697    18 00 68 08
-  969B    B1 07 63 B0
-  969F    43 B1 02 50
+  9697    18 00 68 08           
+  969B    B1 07 63 B0           
+  969F    43 B1 02 50           
   96A3    C0 5C C8 50           	DB	0C0H,5CH,0C8H,50H,0CFH,53H,0C8H,5CH,0CFH,5FH,0C8H,53H,0CFH,50H,0C8H,5FH
-  96A7    CF 53 C8 5C
-  96AB    CF 5F C8 53
-  96AF    CF 50 C8 5F
+  96A7    CF 53 C8 5C           
+  96AB    CF 5F C8 53           
+  96AF    CF 50 C8 5F           
   96B3    CF 5C B1 04           	DB	0CFH,5CH,0B1H,04H,0C0H,0C8H,0B1H,02H,5CH,0C0H,50H,0B1H,04H,0C0H,0C5H,0B1H
-  96B7    C0 C8 B1 02
-  96BB    5C C0 50 B1
-  96BF    04 C0 C5 B1
+  96B7    C0 C8 B1 02           
+  96BB    5C C0 50 B1           
+  96BF    04 C0 C5 B1           
   96C3    02 5C C0 F0           	DB	02H,5CH,0C0H,0F0H,16H,0CFH,0B1H,04H,74H,0DAH,0B1H,02H,74H,0DBH,0B1H,04H
-  96C7    16 CF B1 04
-  96CB    74 DA B1 02
-  96CF    74 DB B1 04
+  96C7    16 CF B1 04           
+  96CB    74 DA B1 02           
+  96CF    74 DB B1 04           
   96D3    72 DA B1 02           	DB	72H,0DAH,0B1H,02H,74H,0D8H,41H,0B1H,04H,74H,00H,0F0H,0AH,0CFH,0B1H,01H
-  96D7    74 D8 41 B1
-  96DB    04 74 00 F0
-  96DF    0A CF B1 01
+  96D7    74 D8 41 B1           
+  96DB    04 74 00 F0           
+  96DF    0A CF B1 01           
   96E3    74 18 00 68           	DB	74H,18H,00H,68H,08H,0B1H,03H,63H,0DAH,0B1H,02H,74H,10H,0AH,0B1H,01H
-  96E7    08 B1 03 63
-  96EB    DA B1 02 74
-  96EF    10 0A B1 01
+  96E7    08 B1 03 63           
+  96EB    DA B1 02 74           
+  96EF    10 0A B1 01           
   96F3    74 18 00 68           	DB	74H,18H,00H,68H,08H,63H,0D8H,44H,0B1H,04H,74H,0DAH,0B1H,02H,74H,0F0H
-  96F7    08 63 D8 44
-  96FB    B1 04 74 DA
-  96FF    B1 02 74 F0
+  96F7    08 63 D8 44           
+  96FB    B1 04 74 DA           
+  96FF    B1 02 74 F0           
   9703    0A B1 01 74           	DB	0AH,0B1H,01H,74H,18H,00H,68H,08H,63H,0B0H,0B1H,02H,50H,0D8H,44H,74H
-  9707    18 00 68 08
-  970B    63 B0 B1 02
-  970F    50 D8 44 74
+  9707    18 00 68 08           
+  970B    63 B0 B1 02           
+  970F    50 D8 44 74           
   9713    F0 0A B1 01           	DB	0F0H,0AH,0B1H,01H,74H,18H,00H,68H,08H,0B1H,03H,63H,0D8H,44H,0B1H,02H
-  9717    74 18 00 68
-  971B    08 B1 03 63
-  971F    D8 44 B1 02
+  9717    74 18 00 68           
+  971B    08 B1 03 63           
+  971F    D8 44 B1 02           
   9723    74 F0 0A B1           	DB	74H,0F0H,0AH,0B1H,01H,74H,18H,00H,68H,08H,63H,10H,14H,0B1H,02H,74H
-  9727    01 74 18 00
-  972B    68 08 63 10
-  972F    14 B1 02 74
+  9727    01 74 18 00           
+  972B    68 08 63 10           
+  972F    14 B1 02 74           
   9733    DC 74 D5 B1           	DB	0DCH,74H,0D5H,0B1H,01H,74H,18H,00H,42H,08H,58H,0D8H,44H,0B1H,02H,74H
-  9737    01 74 18 00
-  973B    42 08 58 D8
-  973F    44 B1 02 74
+  9737    01 74 18 00           
+  973B    42 08 58 D8           
+  973F    44 B1 02 74           
   9743    F0 0A B1 01           	DB	0F0H,0AH,0B1H,01H,74H,18H,00H,42H,08H,0B1H,03H,58H,0B0H,0B1H,02H,58H
-  9747    74 18 00 42
-  974B    08 B1 03 58
-  974F    B0 B1 02 58
+  9747    74 18 00 42           
+  974B    08 B1 03 58           
+  974F    B0 B1 02 58           
   9753    D5 B1 01 74           	DB	0D5H,0B1H,01H,74H,18H,00H,42H,08H,58H,10H,14H,0B1H,02H,74H,0D8H,44H
-  9757    18 00 42 08
-  975B    58 10 14 B1
-  975F    02 74 D8 44
+  9757    18 00 42 08           
+  975B    58 10 14 B1           
+  975F    02 74 D8 44           
   9763    74 F0 0A B1           	DB	74H,0F0H,0AH,0B1H,01H,74H,18H,00H,46H,08H,57H,0B0H,0B1H,04H,57H,0D5H
-  9767    01 74 18 00
-  976B    46 08 57 B0
-  976F    B1 04 57 D5
+  9767    01 74 18 00           
+  976B    46 08 57 B0           
+  976F    B1 04 57 D5           
   9773    B1 01 74 18           	DB	0B1H,01H,74H,18H,00H,46H,08H,57H,0B0H,0B1H,02H,57H,0C0H,0D5H,0B1H,01H
-  9777    00 46 08 57
-  977B    B0 B1 02 57
-  977F    C0 D5 B1 01
+  9777    00 46 08 57           
+  977B    B0 B1 02 57           
+  977F    C0 D5 B1 01           
   9783    74 18 00 46           	DB	74H,18H,00H,46H,08H,57H,0B0H,0B1H,02H,57H,00H,0F0H,0AH,0CFH,0B1H,01H
-  9787    08 57 B0 B1
-  978B    02 57 00 F0
-  978F    0A CF B1 01
+  9787    08 57 B0 B1           
+  978B    02 57 00 F0           
+  978F    0A CF B1 01           
   9793    74 18 00 68           	DB	74H,18H,00H,68H,08H,0B1H,03H,63H,0DAH,0B1H,02H,74H,10H,0AH,0B1H,01H
-  9797    08 B1 03 63
-  979B    DA B1 02 74
-  979F    10 0A B1 01
+  9797    08 B1 03 63           
+  979B    DA B1 02 74           
+  979F    10 0A B1 01           
   97A3    74 18 00 68           	DB	74H,18H,00H,68H,08H,63H,0D8H,44H,0B1H,04H,74H,0DAH,0B1H,02H,74H,0F0H
-  97A7    08 63 D8 44
-  97AB    B1 04 74 DA
-  97AF    B1 02 74 F0
+  97A7    08 63 D8 44           
+  97AB    B1 04 74 DA           
+  97AF    B1 02 74 F0           
   97B3    0A B1 01 74           	DB	0AH,0B1H,01H,74H,18H,00H,68H,08H,63H,0B0H,0B1H,02H,50H,0D8H,44H,74H
-  97B7    18 00 68 08
-  97BB    63 B0 B1 02
-  97BF    50 D8 44 74
+  97B7    18 00 68 08           
+  97BB    63 B0 B1 02           
+  97BF    50 D8 44 74           
   97C3    F0 0A B1 01           	DB	0F0H,0AH,0B1H,01H,74H,18H,00H,68H,08H,0B1H,03H,63H,0D8H,44H,0B1H,02H
-  97C7    74 18 00 68
-  97CB    08 B1 03 63
-  97CF    D8 44 B1 02
+  97C7    74 18 00 68           
+  97CB    08 B1 03 63           
+  97CF    D8 44 B1 02           
   97D3    74 F0 0A B1           	DB	74H,0F0H,0AH,0B1H,01H,74H,18H,00H,68H,08H,63H,10H,14H,0B1H,04H,74H
-  97D7    01 74 18 00
-  97DB    68 08 63 10
-  97DF    14 B1 04 74
+  97D7    01 74 18 00           
+  97DB    68 08 63 10           
+  97DF    14 B1 04 74           
   97E3    D6 B1 02 74           	DB	0D6H,0B1H,02H,74H,0DBH,0B1H,04H,75H,0B1H,02H,74H,0D7H,0B1H,06H,74H,0DBH
-  97E7    DB B1 04 75
-  97EB    B1 02 74 D7
-  97EF    B1 06 74 DB
+  97E7    DB B1 04 75           
+  97EB    B1 02 74 D7           
+  97EF    B1 06 74 DB           
   97F3    B1 02 70 6F           	DB	0B1H,02H,70H,6FH,6DH,0D4H,01H,0B1H,04H,50H,01H,01H,0FFH,0D2H,41H,01H
-  97F7    6D D4 01 B1
-  97FB    04 50 01 01
-  97FF    FF D2 41 01
+  97F7    6D D4 01 B1           
+  97FB    04 50 01 01           
+  97FF    FF D2 41 01           
   9803    74 01 10 00           	DB	74H,01H,10H,00H,01H,0D0H,01H,01H,0FFH,00H,0F0H,0AH,0CFH,0B1H,01H,74H
-  9807    01 D0 01 01
-  980B    FF 00 F0 0A
-  980F    CF B1 01 74
+  9807    01 D0 01 01           
+  980B    FF 00 F0 0A           
+  980F    CF B1 01 74           
   9813    18 00 68 08           	DB	18H,00H,68H,08H,0B1H,07H,63H,0B0H,0B1H,02H,50H,0C0H,5CH,0C0H,53H,0C0H
-  9817    B1 07 63 B0
-  981B    B1 02 50 C0
-  981F    5C C0 53 C0
+  9817    B1 07 63 B0           
+  981B    B1 02 50 C0           
+  981F    5C C0 53 C0           
   9823    5F C0 50 C0           	DB	5FH,0C0H,50H,0C0H,5CH,01H,0D0H,01H,30H,0FFH,0D5H,0B1H,01H,74H,18H,00H
-  9827    5C 01 D0 01
-  982B    30 FF D5 B1
-  982F    01 74 18 00
+  9827    5C 01 D0 01           
+  982B    30 FF D5 B1           
+  982F    01 74 18 00           
   9833    42 08 B1 07           	DB	42H,08H,0B1H,07H,64H,0B0H,0B1H,02H,58H,0C0H,5CH,0C0H,57H,0C0H,63H,0C0H
-  9837    64 B0 B1 02
-  983B    58 C0 5C C0
-  983F    57 C0 63 C0
+  9837    64 B0 B1 02           
+  983B    58 C0 5C C0           
+  983F    57 C0 63 C0           
   9843    57 C0 5A 01           	DB	57H,0C0H,5AH,01H,0D0H,01H,10H,0FFH,00H,0F0H,0AH,0CFH,0B1H,01H,74H,18H
-  9847    D0 01 10 FF
-  984B    00 F0 0A CF
-  984F    B1 01 74 18
+  9847    D0 01 10 FF           
+  984B    00 F0 0A CF           
+  984F    B1 01 74 18           
   9853    00 68 08 B1           	DB	00H,68H,08H,0B1H,07H,63H,0B0H,43H,0B1H,02H,50H,0C0H,5CH,0C8H,50H,0CFH
-  9857    07 63 B0 43
-  985B    B1 02 50 C0
-  985F    5C C8 50 CF
+  9857    07 63 B0 43           
+  985B    B1 02 50 C0           
+  985F    5C C8 50 CF           
   9863    53 C8 5C CF           	DB	53H,0C8H,5CH,0CFH,5FH,0C8H,53H,0CFH,50H,0C8H,5FH,0CFH,5CH,01H,0D0H,01H
-  9867    5F C8 53 CF
-  986B    50 C8 5F CF
-  986F    5C 01 D0 01
+  9867    5F C8 53 CF           
+  986B    50 C8 5F CF           
+  986F    5C 01 D0 01           
   9873    30 FF F0 0A           	DB	30H,0FFH,0F0H,0AH,0B1H,01H,74H,18H,00H,42H,08H,0B1H,07H,64H,0B0H,43H
-  9877    B1 01 74 18
-  987B    00 42 08 B1
-  987F    07 64 B0 43
+  9877    B1 01 74 18           
+  987B    00 42 08 B1           
+  987F    07 64 B0 43           
   9883    B1 02 58 C0           	DB	0B1H,02H,58H,0C0H,5CH,0C8H,58H,0F0H,0AH,0CFH,0B1H,01H,74H,18H,00H,46H
-  9887    5C C8 58 F0
-  988B    0A CF B1 01
-  988F    74 18 00 46
+  9887    5C C8 58 F0           
+  988B    0A CF B1 01           
+  988F    74 18 00 46           
   9893    08 B1 07 63           	DB	08H,0B1H,07H,63H,0B0H,43H,0B1H,02H,57H,0C8H,63H,0CFH,5AH,01H,0D0H,01H
-  9897    B0 43 B1 02
-  989B    57 C8 63 CF
-  989F    5A 01 D0 01
+  9897    B0 43 B1 02           
+  989B    57 C8 63 CF           
+  989F    5A 01 D0 01           
   98A3    10 FF 00 F0           	DB	10H,0FFH,00H,0F0H,0AH,0CFH,0B1H,01H,74H,18H,00H,68H,08H,0B1H,07H,63H
-  98A7    0A CF B1 01
-  98AB    74 18 00 68
-  98AF    08 B1 07 63
+  98A7    0A CF B1 01           
+  98AB    74 18 00 68           
+  98AF    08 B1 07 63           
   98B3    B0 43 B1 02           	DB	0B0H,43H,0B1H,02H,50H,0C0H,5CH,0C8H,50H,0F0H,0AH,0CFH,0B1H,01H,74H,18H
-  98B7    50 C0 5C C8
-  98BB    50 F0 0A CF
-  98BF    B1 01 74 18
+  98B7    50 C0 5C C8           
+  98BB    50 F0 0A CF           
+  98BF    B1 01 74 18           
   98C3    00 68 08 B1           	DB	00H,68H,08H,0B1H,07H,63H,0B0H,43H,0B1H,02H,50H,0C8H,5FH,0CFH,5CH,01H
-  98C7    07 63 B0 43
-  98CB    B1 02 50 C8
-  98CF    5F CF 5C 01
+  98C7    07 63 B0 43           
+  98CB    B1 02 50 C8           
+  98CF    5F CF 5C 01           
   98D3    D0 01 30 FF           	DB	0D0H,01H,30H,0FFH,0F0H,0AH,0B1H,01H,74H,18H,00H,42H,08H,0B1H,07H,64H
-  98D7    F0 0A B1 01
-  98DB    74 18 00 42
-  98DF    08 B1 07 64
+  98D7    F0 0A B1 01           
+  98DB    74 18 00 42           
+  98DF    08 B1 07 64           
   98E3    B0 43 B1 04           	DB	0B0H,43H,0B1H,04H,58H,0F0H,0AH,0B1H,01H,74H,18H,00H,46H,08H,0B1H,0FH
-  98E7    58 F0 0A B1
-  98EB    01 74 18 00
-  98EF    46 08 B1 0F
+  98E7    58 F0 0A B1           
+  98EB    01 74 18 00           
+  98EF    46 08 B1 0F           
   98F3    63 05 B1 04           	DB	63H,05H,0B1H,04H,0D0H,03H,03H,00H,0F0H,0AH,0CFH,0B1H,01H,74H,18H,00H
-  98F7    D0 03 03 00
-  98FB    F0 0A CF B1
-  98FF    01 74 18 00
+  98F7    D0 03 03 00           
+  98FB    F0 0A CF B1           
+  98FF    01 74 18 00           
   9903    68 08 B1 07           	DB	68H,08H,0B1H,07H,63H,10H,0AH,0B1H,01H,74H,18H,00H,34H,08H,0B1H,03H
-  9907    63 10 0A B1
-  990B    01 74 18 00
-  990F    34 08 B1 03
+  9907    63 10 0A B1           
+  990B    01 74 18 00           
+  990F    34 08 B1 03           
   9913    6F B0 43 B1           	DB	6FH,0B0H,43H,0B1H,04H,57H,0F0H,0AH,0B1H,01H,74H,18H,00H,68H,08H,0B1H
-  9917    04 57 F0 0A
-  991B    B1 01 74 18
-  991F    00 68 08 B1
+  9917    04 57 F0 0A           
+  991B    B1 01 74 18           
+  991F    00 68 08 B1           
   9923    07 63 10 0A           	DB	07H,63H,10H,0AH,0B1H,01H,74H,18H,00H,34H,08H,0B1H,03H,6FH,0B0H,43H
-  9927    B1 01 74 18
-  992B    00 34 08 B1
-  992F    03 6F B0 43
+  9927    B1 01 74 18           
+  992B    00 34 08 B1           
+  992F    03 6F B0 43           
   9933    B1 04 57 F0           	DB	0B1H,04H,57H,0F0H,0AH,0B1H,01H,74H,18H,00H,42H,08H,0B1H,07H,6BH,10H
-  9937    0A B1 01 74
-  993B    18 00 42 08
-  993F    B1 07 6B 10
+  9937    0A B1 01 74           
+  993B    18 00 42 08           
+  993F    B1 07 6B 10           
   9943    0A B1 01 74           	DB	0AH,0B1H,01H,74H,18H,00H,34H,08H,0B1H,03H,6FH,0B0H,43H,0B1H,04H,58H
-  9947    18 00 34 08
-  994B    B1 03 6F B0
-  994F    43 B1 04 58
+  9947    18 00 34 08           
+  994B    B1 03 6F B0           
+  994F    43 B1 04 58           
   9953    F0 0A B1 01           	DB	0F0H,0AH,0B1H,01H,74H,18H,00H,46H,08H,0B1H,07H,6AH,10H,0AH,0B1H,01H
-  9957    74 18 00 46
-  995B    08 B1 07 6A
-  995F    10 0A B1 01
+  9957    74 18 00 46           
+  995B    08 B1 07 6A           
+  995F    10 0A B1 01           
   9963    74 18 00 2F           	DB	74H,18H,00H,2FH,08H,0B1H,03H,71H,0B0H,43H,0B1H,04H,52H,00H,00H,01H
-  9967    08 B1 03 71
-  996B    B0 43 B1 04
-  996F    52 00 00 01
+  9967    08 B1 03 71           
+  996B    B0 43 B1 04           
+  996F    52 00 00 01           
   9973    80 8E 00 00           	DB	80H,8EH,00H,00H,01H,05H,01H,0EFH,00H,00H,01H,0EEH,01H,00H,01H,0EEH
-  9977    01 05 01 EF
-  997B    00 00 01 EE
-  997F    01 00 01 EE
+  9977    01 05 01 EF           
+  997B    00 00 01 EE           
+  997F    01 00 01 EE           
   9983    FF FF 01 ED           	DB	0FFH,0FFH,01H,0EDH,01H,00H,81H,0EDH,0FFH,0FFH,03H,04H,01H,8FH,00H,00H
-  9987    01 00 81 ED
-  998B    FF FF 03 04
-  998F    01 8F 00 00
+  9987    01 00 81 ED           
+  998B    FF FF 03 04           
+  998F    01 8F 00 00           
   9993    01 8F 00 00           	DB	01H,8FH,00H,00H,01H,8DH,00H,00H,01H,8CH,00H,00H,03H,04H,00H,8FH
-  9997    01 8D 00 00
-  999B    01 8C 00 00
-  999F    03 04 00 8F
+  9997    01 8D 00 00           
+  999B    01 8C 00 00           
+  999F    03 04 00 8F           
   99A3    FF FF 00 8F           	DB	0FFH,0FFH,00H,8FH,0FEH,0FFH,00H,8DH,0FDH,0FFH,00H,8CH,0FFH,0FFH,04H,05H
-  99A7    FE FF 00 8D
-  99AB    FD FF 00 8C
-  99AF    FF FF 04 05
+  99A7    FE FF 00 8D           
+  99AB    FD FF 00 8C           
+  99AF    FF FF 04 05           
   99B3    0F 4F 00 01           	DB	0FH,4FH,00H,01H,01H,0CFH,00H,01H,01H,0CFH,00H,01H,01H,0CCH,00H,01H
-  99B7    01 CF 00 01
-  99BB    01 CF 00 01
-  99BF    01 CC 00 01
+  99B7    01 CF 00 01           
+  99BB    01 CF 00 01           
+  99BF    01 CC 00 01           
   99C3    00 90 00 00           	DB	00H,90H,00H,00H,0CH,0DH,01H,6FH,00H,01H,01H,0EFH,0A0H,00H,01H,0EEH
-  99C7    0C 0D 01 6F
-  99CB    00 01 01 EF
-  99CF    A0 00 01 EE
+  99C7    0C 0D 01 6F           
+  99CB    00 01 01 EF           
+  99CF    A0 00 01 EE           
   99D3    A0 00 81 EE           	DB	0A0H,00H,81H,0EEH,0A0H,00H,01H,0EDH,0A0H,00H,01H,0EDH,0A0H,00H,01H,0ECH
-  99D7    A0 00 01 ED
-  99DB    A0 00 01 ED
-  99DF    A0 00 01 EC
+  99D7    A0 00 01 ED           
+  99DB    A0 00 01 ED           
+  99DF    A0 00 01 EC           
   99E3    C0 00 01 EC           	DB	0C0H,00H,01H,0ECH,0C0H,00H,01H,0EBH,0C0H,00H,01H,0E9H,0C0H,00H,01H,0E6H
-  99E7    C0 00 01 EB
-  99EB    C0 00 01 E9
-  99EF    C0 00 01 E6
+  99E7    C0 00 01 EB           
+  99EB    C0 00 01 E9           
+  99EF    C0 00 01 E6           
   99F3    C0 00 81 E4           	DB	0C0H,00H,81H,0E4H,0C7H,00H,01H,90H,00H,00H,04H,07H,0FH,0FH,80H,00H
-  99F7    C7 00 01 90
-  99FB    00 00 04 07
-  99FF    0F 0F 80 00
+  99F7    C7 00 01 90           
+  99FB    00 00 04 07           
+  99FF    0F 0F 80 00           
   9A03    0D 0F C0 00           	DB	0DH,0FH,0C0H,00H,09H,0EH,00H,01H,05H,0EH,40H,01H,01H,1DH,00H,00H
-  9A07    09 0E 00 01
-  9A0B    05 0E 40 01
-  9A0F    01 1D 00 00
+  9A07    09 0E 00 01           
+  9A0B    05 0E 40 01           
+  9A0F    01 1D 00 00           
   9A13    01 1D 00 00           	DB	01H,1DH,00H,00H,81H,1DH,00H,00H,03H,07H,29H,6FH,00H,00H,31H,6FH
-  9A17    81 1D 00 00
-  9A1B    03 07 29 6F
-  9A1F    00 00 31 6F
+  9A17    81 1D 00 00           
+  9A1B    03 07 29 6F           
+  9A1F    00 00 31 6F           
   9A23    00 00 01 6E           	DB	00H,00H,01H,6EH,00H,00H,01H,7BH,50H,00H,81H,6AH,0C4H,0FFH,01H,7AH
-  9A27    00 00 01 7B
-  9A2B    50 00 81 6A
-  9A2F    C4 FF 01 7A
+  9A27    00 00 01 7B           
+  9A2B    50 00 81 6A           
+  9A2F    C4 FF 01 7A           
   9A33    14 00 81 6A           	DB	14H,00H,81H,6AH,0D8H,0FFH,02H,03H,81H,0FH,00H,00H,81H,0FH,00H,00H
-  9A37    D8 FF 02 03
-  9A3B    81 0F 00 00
-  9A3F    81 0F 00 00
+  9A37    D8 FF 02 03           
+  9A3B    81 0F 00 00           
+  9A3F    81 0F 00 00           
   9A43    80 8E 00 00           	DB	80H,8EH,00H,00H,0CH,0DH,01H,7DH,00H,00H,01H,7DH,00H,00H,01H,7DH
-  9A47    0C 0D 01 7D
-  9A4B    00 00 01 7D
-  9A4F    00 00 01 7D
+  9A47    0C 0D 01 7D           
+  9A4B    00 00 01 7D           
+  9A4F    00 00 01 7D           
   9A53    00 00 01 7C           	DB	00H,00H,01H,7CH,00H,00H,01H,7CH,00H,00H,01H,7CH,00H,00H,01H,7BH
-  9A57    00 00 01 7C
-  9A5B    00 00 01 7C
-  9A5F    00 00 01 7B
+  9A57    00 00 01 7C           
+  9A5B    00 00 01 7C           
+  9A5F    00 00 01 7B           
   9A63    00 00 01 7A           	DB	00H,00H,01H,7AH,00H,00H,01H,79H,00H,00H,01H,79H,00H,00H,01H,79H
-  9A67    00 00 01 79
-  9A6B    00 00 01 79
-  9A6F    00 00 01 79
+  9A67    00 00 01 79           
+  9A6B    00 00 01 79           
+  9A6F    00 00 01 79           
   9A73    00 00 01 79           	DB	00H,00H,01H,79H,00H,00H,81H,78H,00H,00H,03H,04H,0CDH,0FH,80H,00H
-  9A77    00 00 81 78
-  9A7B    00 00 03 04
-  9A7F    CD 0F 80 00
+  9A77    00 00 81 78           
+  9A7B    00 00 03 04           
+  9A7F    CD 0F 80 00           
   9A83    01 8F A0 00           	DB	01H,8FH,0A0H,00H,01H,8FH,0E0H,00H,81H,0CDH,80H,00H,00H,02H,0FH,0FH
-  9A87    01 8F E0 00
-  9A8B    81 CD 80 00
-  9A8F    00 02 0F 0F
+  9A87    01 8F E0 00           
+  9A8B    81 CD 80 00           
+  9A8F    00 02 0F 0F           
   9A93    C0 00 01 8E           	DB	0C0H,00H,01H,8EH,80H,01H,00H,01H,81H,0FH,00H,00H,02H,03H,81H,1CH
-  9A97    80 01 00 01
-  9A9B    81 0F 00 00
-  9A9F    02 03 81 1C
+  9A97    80 01 00 01           
+  9A9B    81 0F 00 00           
+  9A9F    02 03 81 1C           
   9AA3    00 00 81 1C           	DB	00H,00H,81H,1CH,00H,00H,80H,89H,00H,00H,02H,03H,81H,1CH,00H,00H
-  9AA7    00 00 80 89
-  9AAB    00 00 02 03
-  9AAF    81 1C 00 00
+  9AA7    00 00 80 89           
+  9AAB    00 00 02 03           
+  9AAF    81 1C 00 00           
   9AB3    01 1B 00 00           	DB	01H,1BH,00H,00H,81H,0CH,00H,00H,00H,01H,00H,28H,29H,00H,0FAH,0F8H
-  9AB7    81 0C 00 00
-  9ABB    00 01 00 28
-  9ABF    29 00 FA F8
+  9AB7    81 0C 00 00           
+  9ABB    00 01 00 28           
+  9ABF    29 00 FA F8           
   9AC3    F6 F4 F2 F0           	DB	0F6H,0F4H,0F2H,0F0H,0EEH,0ECH,0EAH,0E8H,0E6H,0E4H,0E2H,0E0H,0DEH,0DCH,0DAH,0D8H
-  9AC7    EE EC EA E8
-  9ACB    E6 E4 E2 E0
-  9ACF    DE DC DA D8
+  9AC7    EE EC EA E8           
+  9ACB    E6 E4 E2 E0           
+  9ACF    DE DC DA D8           
   9AD3    D6 D4 D2 D0           	DB	0D6H,0D4H,0D2H,0D0H,0CEH,0CCH,0CAH,0C8H,0C6H,0C4H,0C2H,0C0H,0BEH,0BCH,0BAH,0B8H
-  9AD7    CE CC CA C8
-  9ADB    C6 C4 C2 C0
-  9ADF    BE BC BA B8
+  9AD7    CE CC CA C8           
+  9ADB    C6 C4 C2 C0           
+  9ADF    BE BC BA B8           
   9AE3    B6 B4 B2 B0           	DB	0B6H,0B4H,0B2H,0B0H,0AEH,0ACH,01H,02H,0CH,00H,02H,03H,00H,0CH,00H,54H
-  9AE7    AE AC 01 02
-  9AEB    0C 00 02 03
-  9AEF    00 0C 00 54
+  9AE7    AE AC 01 02           
+  9AEB    0C 00 02 03           
+  9AEF    00 0C 00 54           
   9AF3    55 FF FE FD           	DB	55H,0FFH,0FEH,0FDH,0FCH,0FBH,0FAH,0F9H,0F8H,0F7H,0F6H,0F5H,0F4H,0F3H,0F2H,0F1H
-  9AF7    FC FB FA F9
-  9AFB    F8 F7 F6 F5
-  9AFF    F4 F3 F2 F1
+  9AF7    FC FB FA F9           
+  9AFB    F8 F7 F6 F5           
+  9AFF    F4 F3 F2 F1           
   9B03    F0 EF EE ED           	DB	0F0H,0EFH,0EEH,0EDH,0ECH,0EBH,0EAH,0E9H,0E8H,0E7H,0E6H,0E5H,0E4H,0E3H,0E2H,0E1H
-  9B07    EC EB EA E9
-  9B0B    E8 E7 E6 E5
-  9B0F    E4 E3 E2 E1
+  9B07    EC EB EA E9           
+  9B0B    E8 E7 E6 E5           
+  9B0F    E4 E3 E2 E1           
   9B13    E0 DF DE DD           	DB	0E0H,0DFH,0DEH,0DDH,0DCH,0DBH,0DAH,0D9H,0D8H,0D7H,0D6H,0D5H,0D4H,0D3H,0D2H,0D1H
-  9B17    DC DB DA D9
-  9B1B    D8 D7 D6 D5
-  9B1F    D4 D3 D2 D1
+  9B17    DC DB DA D9           
+  9B1B    D8 D7 D6 D5           
+  9B1F    D4 D3 D2 D1           
   9B23    D0 CF CE CD           	DB	0D0H,0CFH,0CEH,0CDH,0CCH,0CBH,0CAH,0C9H,0C8H,0C7H,0C6H,0C5H,0C4H,0C3H,0C2H,0C1H
-  9B27    CC CB CA C9
-  9B2B    C8 C7 C6 C5
-  9B2F    C4 C3 C2 C1
+  9B27    CC CB CA C9           
+  9B2B    C8 C7 C6 C5           
+  9B2F    C4 C3 C2 C1           
   9B33    C0 00 00 40           	DB	0C0H,00H,00H,40H,00H,00H,00H,40H,00H,00H,00H,40H,00H,00H,00H,40H
-  9B37    00 00 00 40
-  9B3B    00 00 00 40
-  9B3F    00 00 00 40
+  9B37    00 00 00 40           
+  9B3B    00 00 00 40           
+  9B3F    00 00 00 40           
   9B43    00 00 00 40           	DB	00H,00H,00H,40H,00H,00H,02H,03H,18H,30H,00H,00H,01H,00H
-  9B47    00 00 02 03
-  9B4B    18 30 00 00
-  9B4F    01 00
+  9B47    00 00 02 03           
+  9B4B    18 30 00 00           
+  9B4F    01 00                 
   9B51                          SONGEN:
-
+                                
                                 	.DEPHASE
-  1CE8                          PAYEND:
-
+  1CEF                          PAYEND:
+                                
                                 ; ---------------------------------------------------------------------------
                                 ;	SOURCE TERMINATION
                                 ;
@@ -2747,95 +2759,94 @@
                                 ;	immediately after it with byte 1AH, the traditional TIKO / KP/M / CP/M 2.2
                                 ;	text end-of-file marker.
                                 ; ---------------------------------------------------------------------------
-
+                                
                                 	END	ENTRY
 Macros:
 
 Symbols:
-806C 	.LOAD_RETURN    	8035 	.PAUSE_RETURN   	80AF 	.PLAY50
-8049 	.RESUME_RETURN  	809E 	.STOP_RETURN    	8689 	ADDTOEN
-8812 	ADDTONS         	85D7 	ADIPTA          	862B 	ADIPTB
-863F 	ADIPTC          	881D 	AMPL            	0008 	AMPLA
-0009 	AMPLB           	000A 	AMPLC           	8813 	AYREGS
-0005 	BDOS            	0002 	CCRAMP          	0004 	CCRENV
-0003 	CCRNOS          	0006 	CCRTON          	0014 	CENVEN
-0015 	CFLAGS          	839D 	CGLISS          	87B6 	CHANA
-87D3 	CHANB           	87F0 	CHANC           	84D2 	CHNOAC
-8547 	CHNOAM          	001D 	CHPSIZ          	8461 	CHREGS
-8476 	CH_ACTIVE       	853F 	CH_AMIN         	852D 	CH_AMP
-8550 	CH_APOS         	85A2 	CH_COUNTER      	8561 	CH_ENV
-859B 	CH_EXIT         	8597 	CH_MIX          	8568 	CH_NOEN
-849F 	CH_NOK          	8499 	CH_NTP          	85BA 	CH_ONDL
-848E 	CH_ORPS         	84BA 	CH_SMPS         	8518 	CH_STPP
-8544 	CH_SVAM         	8556 	CH_VOL          	0011 	CNNTSK
-0012 	CNOTE           	001B 	CNTSK           	000C 	COFDEL
-000B 	CONDEL          	000A 	CONOFF          	000D 	CORPTR
-8225 	CORR_1          	8233 	CORR_2          	0000 	CPSIOR
-0001 	CPSISM          	000D 	CR              	85E2 	CRPSPTR
-0013 	CSLNOT          	000F 	CSMPTR          	84E5 	CSP_
-FF16 	CTC3VEC         	FF16 	CTCVEC          	0008 	CTNACC
-0019 	CTNDEL          	0016 	CTNDLY          	0005 	CTSCNT
-0017 	CTSTEP          	8810 	CUREDEL         	880E 	CURESLD
-001C 	CVOL            	83F0 	C_DELAY         	83DE 	C_ENGLS
-8411 	C_NOP           	83C0 	C_ORPOS         	8329 	C_PORTM
-83BA 	C_SMPOS         	83C6 	C_VIBRT         	8649 	DELAY
-880D 	DELYCNT         	0100 	ENTRY           	000B 	ENV
-8821 	ENVBASE         	000D 	ENVTP           	86A5 	ENV_DEL
-86A8 	ESLDADD         	84C1 	E_              	80D4 	FAST_CHAIN_AFTER
-80AD 	FAST_CHAIN_NO_PL	83B0 	GL36            	8121 	INIT
-817A 	INITCOMMON      	8259 	INITV1          	8252 	INITV2
-81F3 	L1              	8200 	L2              	8160 	L20
-8162 	L21             	8204 	L3              	000A 	LF
-0117 	LOADIT          	8382 	LOSTEP          	85EA 	LPOSPTR
-8249 	M1              	825A 	M2              	826D 	M3
-8437 	MDAD1           	8421 	MDAD2           	89D3 	MDLADDR
-0007 	MIXER           	85FD 	MODADDR         	017B 	MSGOFF
-013B 	MSGON           	806D 	MUSIC_IDLE      	8009 	MUSIC_INITIALIZE
-804E 	MUSIC_LOAD      	801B 	MUSIC_LOAD_ENTRY 	800F 	MUSIC_MUTE_ENTRY
-801E 	MUSIC_PAUSE     	8012 	MUSIC_PAUSE_ENTR 	800C 	MUSIC_PLAY_ENTRY
-80C4 	MUSIC_PLAY_TARGE 	8036 	MUSIC_RESUME    	8015 	MUSIC_RESUME_ENT
-806E 	MUSIC_STATE     	804A 	MUSIC_STATUS    	8018 	MUSIC_STATUS_ENT
-8115 	MUTE            	0006 	NOISE           	8387 	NOSIG
-8582 	NO_ENAC         	8589 	NO_ENSL         	8811 	NSBADD
-8811 	NSBASE          	8913 	NT_             	872E 	NT_DATA
-8381 	OLDPRTM         	841A 	ORNPTS          	85F9 	PATSPTR
-1CE8 	PAYEND          	0197 	PAYLOD          	8287 	PDSAM0
-828A 	PDSAM1          	831F 	PDSP_           	82AA 	PD_ENV
-8298 	PD_EOFF         	82B4 	PD_ESAM         	8322 	PD_FIN
-82CE 	PD_LOOP         	82D1 	PD_LP2          	82FE 	PD_NOIS
-8309 	PD_NOTE         	82AF 	PD_ORN          	8280 	PD_ORSM
-8303 	PD_REL          	8311 	PD_RES          	82A0 	PD_SORE
-828F 	PD_VOL          	8615 	PL1A            	8620 	PL1B
-8634 	PL1C            	8648 	PL1D            	864D 	PL2
-85BE 	PLAY            	85EE 	PLNLP           	0009 	PRINTF
-80DA 	PRIVATE_STACK_BA	810A 	PRIVATE_STACK_TO 	835B 	PRNOTE
-8378 	PRSLIDE         	85F2 	PSCALC          	8612 	PSP_
-877E 	PT3EMPTYORN     	82BF 	PT3PD           	827D 	PTDECOD
-8000 	RESBAS          	806F 	RESIDENT_INSTALL 	808C 	RESIDENT_STOP
-86AE 	ROUT            	8430 	SAMPTS          	80D6 	SAVED_STACK_POIN
-80D8 	SAVED_TIKO_VECTO 	83F6 	SETENV          	8273 	SETMDAD
-8412 	SETORN          	833D 	SETPORT         	842B 	SETSAM
-8114 	SETUP           	8391 	SET_STP         	89D3 	SONGBG
-9B51 	SONGEN          	8441 	SPCCOMS         	810A 	START
-8823 	T1_             	8768 	TCNW0           	874A 	TCNW1
-8773 	TCNW2           	875E 	TCNW3           	873E 	TCOD0
-874A 	TCOD1           	874C 	TCOD2           	875F 	TCOD3
-823A 	TC_EXIT         	80A1 	TICK_PHASE_VALUE 	0017 	TIKI_SOUND_DATA
-0016 	TIKI_SOUND_SELEC 	809F 	TIKO_INTERRUPT  	8855 	TNEW0
-8823 	TNEW1           	886D 	TNEW2           	8853 	TNEW3
-8855 	TOLD0           	8823 	TOLD1           	883B 	TOLD2
-8853 	TOLD3           	0000 	TONA            	0002 	TONB
-0004 	TONC            	8188 	TP_0            	8194 	TP_1
-819B 	TP_2            	8006 	TSR_INSTALL_ENTR 	8000 	TSR_INTERRUPT_EN
-8003 	TSR_STOP_ENTRY  	873E 	T_              	8781 	T_PACK
-8823 	VAR0END         	87B6 	VARS            	89D3 	VARSEND
-8373 	VERSION         	8813 	VT_
+806C 	.LOAD_RETURN    8035 	.PAUSE_RETURN   80AF 	.PLAY50         
+8049 	.RESUME_RETURN  809E 	.STOP_RETURN    8689 	ADDTOEN         
+8812 	ADDTONS         85D7 	ADIPTA          862B 	ADIPTB          
+863F 	ADIPTC          881D 	AMPL            0008 	AMPLA           
+0009 	AMPLB           000A 	AMPLC           8813 	AYREGS          
+0005 	BDOS            0002 	CCRAMP          0004 	CCRENV          
+0003 	CCRNOS          0006 	CCRTON          0014 	CENVEN          
+0015 	CFLAGS          839D 	CGLISS          87B6 	CHANA           
+87D3 	CHANB           87F0 	CHANC           84D2 	CHNOAC          
+8547 	CHNOAM          001D 	CHPSIZ          8461 	CHREGS          
+8476 	CH_ACTIVE       853F 	CH_AMIN         852D 	CH_AMP          
+8550 	CH_APOS         85A2 	CH_COUNTER      8561 	CH_ENV          
+859B 	CH_EXIT         8597 	CH_MIX          8568 	CH_NOEN         
+849F 	CH_NOK          8499 	CH_NTP          85BA 	CH_ONDL         
+848E 	CH_ORPS         84BA 	CH_SMPS         8518 	CH_STPP         
+8544 	CH_SVAM         8556 	CH_VOL          0011 	CNNTSK          
+0012 	CNOTE           001B 	CNTSK           000C 	COFDEL          
+000B 	CONDEL          000A 	CONOFF          000D 	CORPTR          
+8225 	CORR_1          8233 	CORR_2          0000 	CPSIOR          
+0001 	CPSISM          000D 	CR              85E2 	CRPSPTR         
+0013 	CSLNOT          000F 	CSMPTR          84E5 	CSP_            
+FF16 	CTC3VEC         FF16 	CTCVEC          0008 	CTNACC          
+0019 	CTNDEL          0016 	CTNDLY          0005 	CTSCNT          
+0017 	CTSTEP          8810 	CUREDEL         880E 	CURESLD         
+001C 	CVOL            83F0 	C_DELAY         83DE 	C_ENGLS         
+8411 	C_NOP           83C0 	C_ORPOS         8329 	C_PORTM         
+83BA 	C_SMPOS         83C6 	C_VIBRT         8649 	DELAY           
+880D 	DELYCNT         0100 	ENTRY           000B 	ENV             
+8821 	ENVBASE         000D 	ENVTP           86A5 	ENV_DEL         
+86A8 	ESLDADD         84C1 	E_              80D4 	FAST_CHAIN_AFTER 
+80AD 	FAST_CHAIN_NO_PL 83B0 	GL36            8121 	INIT            
+817A 	INITCOMMON      8259 	INITV1          8252 	INITV2          
+81F3 	L1              8200 	L2              8160 	L20             
+8162 	L21             8204 	L3              000A 	LF              
+0117 	LOADIT          8382 	LOSTEP          85EA 	LPOSPTR         
+8249 	M1              825A 	M2              826D 	M3              
+8437 	MDAD1           8421 	MDAD2           89D3 	MDLADDR         
+0007 	MIXER           85FD 	MODADDR         0182 	MSGOFF          
+0142 	MSGON           806D 	MUSIC_IDLE      8009 	MUSIC_INITIALIZE 
+804E 	MUSIC_LOAD      801B 	MUSIC_LOAD_ENTRY 800F 	MUSIC_MUTE_ENTRY 
+801E 	MUSIC_PAUSE     8012 	MUSIC_PAUSE_ENTR 800C 	MUSIC_PLAY_ENTRY 
+80C4 	MUSIC_PLAY_TARGE 8036 	MUSIC_RESUME    8015 	MUSIC_RESUME_ENT 
+806E 	MUSIC_STATE     804A 	MUSIC_STATUS    8018 	MUSIC_STATUS_ENT 
+8115 	MUTE            0006 	NOISE           8387 	NOSIG           
+8582 	NO_ENAC         8589 	NO_ENSL         8811 	NSBADD          
+8811 	NSBASE          8913 	NT_             872E 	NT_DATA         
+8381 	OLDPRTM         841A 	ORNPTS          85F9 	PATSPTR         
+1CEF 	PAYEND          019E 	PAYLOD          8287 	PDSAM0          
+828A 	PDSAM1          831F 	PDSP_           82AA 	PD_ENV          
+8298 	PD_EOFF         82B4 	PD_ESAM         8322 	PD_FIN          
+82CE 	PD_LOOP         82D1 	PD_LP2          82FE 	PD_NOIS         
+8309 	PD_NOTE         82AF 	PD_ORN          8280 	PD_ORSM         
+8303 	PD_REL          8311 	PD_RES          82A0 	PD_SORE         
+828F 	PD_VOL          8615 	PL1A            8620 	PL1B            
+8634 	PL1C            8648 	PL1D            864D 	PL2             
+85BE 	PLAY            85EE 	PLNLP           0009 	PRINTF          
+80DA 	PRIVATE_STACK_BA 810A 	PRIVATE_STACK_TO 835B 	PRNOTE          
+8378 	PRSLIDE         85F2 	PSCALC          8612 	PSP_            
+877E 	PT3EMPTYORN     82BF 	PT3PD           827D 	PTDECOD         
+8000 	RESBAS          806F 	RESIDENT_INSTALL 808C 	RESIDENT_STOP   
+86AE 	ROUT            8430 	SAMPTS          80D6 	SAVED_STACK_POIN 
+80D8 	SAVED_TIKO_VECTO 83F6 	SETENV          8273 	SETMDAD         
+8412 	SETORN          833D 	SETPORT         842B 	SETSAM          
+8114 	SETUP           8391 	SET_STP         89D3 	SONGBG          
+9B51 	SONGEN          8441 	SPCCOMS         810A 	START           
+0030 	STKSIZ          8823 	T1_             0002 	TADD            
+8768 	TCNW0           874A 	TCNW1           8773 	TCNW2           
+875E 	TCNW3           873E 	TCOD0           874A 	TCOD1           
+874C 	TCOD2           875F 	TCOD3           823A 	TC_EXIT         
+0005 	TDIV            80A1 	TICK_PHASE_VALUE 0017 	TIKI_SOUND_DATA 
+0016 	TIKI_SOUND_SELEC 809F 	TIKO_INTERRUPT  8855 	TNEW0           
+8823 	TNEW1           886D 	TNEW2           8853 	TNEW3           
+8855 	TOLD0           8823 	TOLD1           883B 	TOLD2           
+8853 	TOLD3           0000 	TONA            0002 	TONB            
+0004 	TONC            8188 	TP_0            8194 	TP_1            
+819B 	TP_2            8006 	TSR_INSTALL_ENTR 8000 	TSR_INTERRUPT_EN 
+8003 	TSR_STOP_ENTRY  873E 	T_              8781 	T_PACK          
+0139 	V2NOEI          8823 	VAR0END         87B6 	VARS            
+89D3 	VARSEND         8373 	VERSION         8813 	VT_             
 
 
 
 No Fatal error(s)
 
 
-  8853 	TNEW3
-8855 	TOLD0           	8823 	TOLD1           	883B 	TOLD2
-8853 	TO
+  
