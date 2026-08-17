@@ -595,13 +595,16 @@ R7A_G_FULL_INIT_NORMAL:
         RET
 
 R2A_GOD_HIT_GATE:
-        ; Existing proven hit immunity path.
-        LD      A,(R2A_GOD)
-        OR      A
-        JR      Z,.NORMAL
-        LD      A,029h
-        RET
-.NORMAL:
+        ; PROJECTILE_HIT_HANDLER calls this when the PLAYER shot has hit an
+        ; invader. God Mode must NOT alter the invader hit index/state here.
+        ;
+        ; Previous G-mode code returned 29h. PROJECTILE_HIT_HANDLER then does
+        ; SUB 1 and stores the result in A511h before starting the explosion.
+        ; That injects an invalid hit/explosion state and can hang when an
+        ; invader explodes in G mode.
+        ;
+        ; Player immunity is handled by the enemy/player event gates
+        ; (R16_ENEMY_EVENT_GATE / bottom-limit handling), not here.
         LD      A,(0A511h)
         RET
 
