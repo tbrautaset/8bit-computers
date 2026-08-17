@@ -1,6 +1,6 @@
-# INVADER – TIKI-100 Enhanced Edition
+# INVADER Enhanced Edition
 
-A cleaned and enhanced edition of the original TIKI-100 **INVADER**. The aim is to preserve the original game and its character while improving controls, presentation, rendering and a few gameplay details.
+Enhanced edition of the original **INVADER**. The aim is to preserve the original game and its character while improving controls, presentation, rendering and a few gameplay details.
 
 ## Changes from the original
 
@@ -29,7 +29,6 @@ A cleaned and enhanced edition of the original TIKI-100 **INVADER**. The aim is 
 
 - The tank starts at a **random horizontal position** rather than the same fixed position on every new game.
 - Reworked tank and invader rendering to remove visible sprite flicker.
-- Improved cleanup between boards so old tank, projectile and invader graphics are not left behind.
 
 ### UFO
 
@@ -49,22 +48,19 @@ A cleaned and enhanced edition of the original TIKI-100 **INVADER**. The aim is 
 ### Rendering and stability
 
 - Flicker-free rendering for the tank, invaders and UFO.
-- Correct cleanup when changing boards.
 - Original game initialization is reused for wave transitions rather than maintaining a separate replacement game-state implementation.
 
 ### Gameplay music
 
 Background music during gameplay was investigated and tested but deliberately not included. Continuous AY playback imposed too much CPU overhead and affected the timing/performance of the original game. Music is therefore limited to the title screen.
 
-## Source cleanup
-
-This repository contains the cleaned final source rather than the development workspace. Abandoned FAST/gameplay music players, gameplay PT3 interrupt handlers, frame-lock/pending-music experiments, rapid-fire experiments, obsolete UFO renderers, superseded wave-reset implementations, reconstruction material and development test files are not included.
+## Source
 
 The build retains a 16 KiB original-runtime reference used to verify that runtime changes remain inside explicitly approved patch areas.
 
 ## Building
 
-This source is intended to live inside the TIKI-100 development tree used for the project. The parent tree must provide `tools\sjasmplus.exe` and the main TIKI-100 `build.ps1`.
+This source is intended to live inside the development tree used for the project. The parent tree must provide `tools\sjasmplus.exe` and the main  `build.ps1`.
 
 From this directory:
 
@@ -72,14 +68,11 @@ From this directory:
 .\build.ps1 -Copy -Run
 ```
 
-Use `-Copy` and `-Run` as required by your local TIKI-100 setup.
 
 ## Copyright / historical note
 
 The original INVADER software was developed for the **TIKI-100** platform in the 1980s.
 
-Tiki Data A/S was acquired by Merkantildata in 1996. Merkantildata subsequently became part of the corporate history of the company now known as Atea. This project has **not independently established the present copyright ownership of the original INVADER software**, and does not claim ownership of the original work.
+This project has **not independently established the present copyright ownership of the original INVADER software**, and does not claim ownership of the original work.
 
-Rights to the original software and other original TIKI-100 material remain with their respective rights holder(s), where applicable. The material in this repository represents preservation-oriented modifications and enhancements to the original software.
-
-No new licence for the underlying original INVADER code is asserted by this repository.
+Rights to the original software and other original material remain with their respective rights holder(s), where applicable. The material in this repository represents preservation-oriented modifications and enhancements to the original software.
