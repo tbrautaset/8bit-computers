@@ -1,0 +1,338 @@
+          LIBG
+
+          Egil Kvaleberg, 18/7 1985
+
+
+
+          LIBG er at bibliotek  av  grafikk-funksjoner  for  Pascal  og  C,
+          tilpasset  Tiki-100.  Funksjoner  for  Pascal  er  vist med "P:",
+          funksjoner for C med "C:".
+
+
+          Bruk av grafikk-funksjoner i Turbo-Pascal:
+
+          F|lgende linje  m}  tas  med  etter  program-definisjonen  dersom
+          grafikk-pakken skal kunne brukes:
+                  (*$I LIBG.INC *)
+          Dersom du f}r plassproblemer, b|r du lage en kopi av LIBG.INC der
+          de  funksjonene  som  du ikke bruker er fjernet. Det hjelper ogs}
+          ikke } ta med seg feilmeldingene i Turbo.
+
+
+          Bruk av grafikk-funksjoner i T-Pascal:
+
+          I hovedprogrammet m} definisjonene fra filen "LIBG.HDR"  kopieres
+          inn.  Legg  merke  til  at "var"-definisjonen fra denne fila skal
+          v{re den f|rste "var"-definisjonen i hovedprogrammet.  Programmet
+          kompileres  p}  vanlig m}te. Ved lenkingen m} grafikk-biblioteket
+          "TPLIBG" tas med. Som vanlig skal enten  "TPLIB"  eller  "TPLIBR"
+          tas med som f|rste fil i lista, og hovedprogrammet ditt som siste
+          fil.  I  T-Pascal  er ikke typen "string" definert, og funksjonen
+          "txt" tar derfor som argument et "array of char" med  lengde  80,
+          der tekststrengen slutter med en "chr(0)".
+
+
+          Bruk av grafikk-funksjoner i AC80:
+
+          Ved  lenking  m} filen "LIBG" tas med, gjerne med "-s" opsjon. Et
+          eksempel:
+                  A>AC80 minfil.c
+                  A>AL minfil -slibg
+
+
+          Kort forklaring av endel begreper:
+
+          Modus:
+          Grafikken kan ordnes p} tre  forskjellige  m}ter,  brukes  i  tre
+          modi.  Det  valgte  modus gjelder alltid for hele bildet. Det har
+          ingen hensikt } skifte modus for et allerede eksisterende  bilde.
+          Tre modi finnes:
+                  1:  2 blekk, 960 punkter horisontalt, 256 punkter vertikalt.
+                  2:  4 blekk, 480 punkter horisontalt, 256 punkter vertikalt.
+                  3: 16 blekk, 240 punkter horisontalt, 256 punkter vertikalt.
+
+          Punkt:
+          Den  minste  delen  i  bildet.  I  motsetning til den matematiske
+          definisjonen, har alts} et  punkt  i  denne  sammenheng  en  viss
+          utstrekning.
+
+          Blekk:
+          I  et  bilde  kan  det bare presenteres et begrenset antall ulike
+          farger p} en gang. Hver av disse fargene  kalles  for  et  blekk.
+          Hvert  enkelt  blekk  kan  uavhengig,  og  i et hvilket som helst
+          tidspunkt, gis en fargenyanse.
+
+
+          Beskrivelse av de enkelte funksjonene:
+
+          P: procedure ginit;
+          C: ginit()
+          Denne   funksjonen   m}   brukes   f|r   andre    funksjoner    i
+          grafikkbiblioteket tas i bruk.
+
+          P: procedure ink(i:integer);
+          C: ink(n) int n;
+          Velger  et blekk for framtidige grafikk-operasjoner. I modus 3 er
+          det 16 blekk (0..15), i modus 2 er det 4 (0..3), i modus 1 bare 2
+          (0..1).   Antall    blekk    finnes    best    ved    hjelp    av
+          getpar()-funksjonen. Etter initialisering er blekk null valgt.
+
+          P: function curink:integer;
+          C: int curink()
+          Verdien er det blekk som tidligere er valgt med ink-funksjonen.
+
+          P: procedure defink(r,g,b:integer);
+          C: defink(r,g,b) int r,g,b;
+          Definerer  fargenyansen  for  det  blekket  som for |yeblikket er
+          valgt. Valget vil naturligvis ogs} gjelde  det  som  allerede  er
+          tegnet  med  dette  blekket.  En  fargenyanse spesifiseres med en
+          r|d-komponent  (0..100),  en  gr|nn-komponent  (0..100)   og   en
+          bl}-komponent (0..100). Vanligvis vil blekk 0 v{re svart (0,0,0),
+          og  det  |verste  blekket  v{re hvitt (100,100,100). Et blekk b|r
+          defineres f|r det tas i bruk.
+
+          P: procedure apos(x,y:integer);
+          C: apos(x,y) int x,y;
+          Velger en posisjon som utgangspunkt for neste  grafikk-operasjon.
+          Posisjonen  (0,0)  svarer til |verste venstre hj|rne. X-aksen har
+          positiv retning mot h|yre, y-aksen har positiv  retning  nedover.
+          Antall  posisjoner finnes ved } bruke getpar()-kallet. Dersom det
+          finnes 240 punkter i x-retning og 256 punkter i y-retning, s}  er
+          (239,0)  |verste h|yre hj|rne, (0,255) nederste venstre hj|rne og
+          (239,255) nederste h|yre hj|rne.
+
+          P: procedure curpos(var xp,yp: integer);
+          C: curpos(xp,yp) int *xp,*yp;
+          Argumentene er pekere til to heltall som mottar n}v{rende  x-  og
+          y-posisjon.
+
+          P: procedure rpos(xrel,yrel:integer);
+          C: rpos(xrel,yrel) int xrel,yrel;
+          Posisjonerer  relativt  i  forhold til n}v{rende posisjon, d.v.s.
+          flytter fra posisjon (x,y) til (x+xrel,y+yrel).
+
+          P: procedure dot;
+          C: dot()
+          Tegner  en  flekk  p}  den  n}v{rede  posisjonen.  Den  n}v{rende
+          posisjon kan f.eks. settes av pos(), blekket som brukes velges av
+          ink()-funksjonen.  En  flekk  best}r av en eller flere punkter. I
+          modus 3 og modus 2 vil en flekk normalt alltid best} av et punkt,
+          i det et punkt har omtrent like stor  utstrekning  vertikalt  som
+          horisontalt.  Det  er  ikke  ulovlig  }  tegne  utenfor skjermen:
+          ingenting vil skje.
+
+          P: procedure aline(x,y:integer);
+          C: aline(x,y) int x,y;
+          Tegner en linje fra den  n}v{rende  posisjonen  fram  til  (x,y).
+          Etter funksjonskallet vil posisjonen v{re enden av linja.
+
+          P: procedure rline(xrel,yrel:integer);
+          C: rline(xrel,yrel) int xrel,yrel;
+          Tegner  en  linje  fra  den  n}v{rende  posisjonen (x,y) fram til
+          (x+xrel,y+yrel). De to argumentene kan naturligvis v{re negative.
+          Etter funksjonskallet vil posisjonen v{re enden av linja.
+
+          P: procedure ltyp(t:integer);
+          C: ltyp(t) int t;
+          Velger linjetype:
+                  0
+                          Heltrukket, standardverdi.
+                  1
+                          Som 0.
+                  2
+                          Streker.
+                  3
+                          Punkter.
+                  4
+                          Streker og punkter.
+
+          P: procedure block(xsize,ysize:integer);
+          C: block(xsize,ysize) int xsize,ysize;
+          Tegner en blokk  med  |verste  venstre  hj|rne  i  den  n}v{rende
+          posisjonen.   St|rrelsen  p}  blokka  i  x-retning  er  xsize,  i
+          y-retning ysize, begge disse argumentene antas } v{re positive.
+
+          P: procedure circle(r,rx:integer);
+          C: circle(r,rx) int r,rx;
+          Tegner en sirkel med radius r. Denne tilsvarer antall  punkter  i
+          y-retning. Radius i x-retning, rx, kan varieres, slik at ellipser
+          kan tegnes.
+
+          P: procedure cpy(newx,newy,width,depth:integer);
+          C: cpy(newx,newy,width,depth) int newx,newy,width,depth;
+          Kopierer  en  blokk  med  st|rrelse  (width,depth)  fra n}v{rende
+          posisjon og fram til punktet (newx,newy), som blir  ny  n}v{rende
+          posisjon.
+
+          P: procedure txt(s:string);
+          P: procedure ch(c:char);
+          C: text(strp) char *strp;
+          Skriver  den  gitte teksten slik at n}v{rende posisjon svarer til
+          |verste  venstre   hj|rne   i   den   f|rste   bokstaven.   Etter
+          funksjonskallet  er  posisjonen  rett  til  h|yre  for  det siste
+          tegnet. Tegnsettet som brukes  bestemmes  av  font-funksjonen.  I
+          Pascal   er   ogs}   en  funksjon  for  }  skrive  bare  et  tegn
+          tilgjengelig.
+
+          P: procedure chsize(c:char,var xp,yp:integer);
+          C: chsize(c,xp,yp) char c; int *xp,*yp;
+          Angir st|rrelsen p}  et  tegn  i  n}v{rende  tegnsett,  i  x-  og
+          y-retning.  St|rrelse  null angir at tegnet ikke er definert. Det
+          f|rste argumentet er tegnet, de to siste pekere til to heltall.
+
+          P: procedure font(fp:GWORD);
+          C: font(fp) struct font_s *fp;
+          Velger et tegnsett.  Argument  null  gir  et  standard  tegnsett,
+          ellers antas argumentet } v{re en peker til et tegnsett.
+
+          P: procedure scroll(n:integer);
+          C: roll(n) int n;
+          Ruller  hele bildet tilsvarende n punkter. En lite, positivt tall
+          for n medf|rer at bildet flyttes oppover.
+
+          P: function gmode(m:integer): integer;
+          C: int gmode(m) int m;
+          Velger grafikk-modus (1..3), eller gj|r ingenting (0).  Etter  at
+          grafikk-modus  er  valgt,  m} alle blekk defineres p} ny. Det har
+          ingen hensikt } endre modus for  et  bilde  som  allerede  er  p}
+          skjermen. Funksjonsverdien er alltid det modus som er valgt.
+
+          P: procedure wrtm(m:integer);
+          C: wrtm(m) int m;
+          Velger skrive-modus:
+                  0
+                          Normal.  Overskriving, det nye blekket i et punkt
+                          erstatter helt det forrige.
+                  1
+                          OG (AND), det  nye  blekket  i  et  punkt  er  et
+                          resultat  av  en  OG-operasjon mellom det forrige
+                          blekket og det blekket det skrives med.
+                  2
+                          ELLER (OR). Nyttig ved setting av bits.
+                  3
+                          XELLER (XOR). Nytting ved "snuing" av bits.
+                  4
+                          Underskriving. Punktet  vil  bare  bli  oppdatert
+                          dersom n}v{rende blekk er null.
+                  5
+                          IKKE-OG  (NOT-AND).  Nyttig  ved  nullstilling av
+                          bits.
+
+          C: pix()
+          Setter punktet p} den n}v{rende posisjonen til det blekk  som  er
+          valgt.
+
+          P: function gpix:integer;
+          C: int getpix()
+          Verdien  er det blekket som er brukt p} den n}v{rende posisjonen.
+          Verdien -1 forteller  at  den  n}v{rende  posisjonen  er  utenfor
+          bildet.
+
+          P: procedure gpar(var xp,yp,ip:integer);
+          C: getpar(xp,yp,inkp) int *xp,*yp,*inkp;
+          Henter  en  del  verdier  fra  det  grafikk  oppsett  som brukes.
+          Argumentene er pekere til heltall som  mottar  antall  punkter  i
+          x-retning, antall punkter i y-retning og antall blekk.
+
+          P: procedure fill(i:integer);
+          C: fill(i) int i;
+          Fyll  den regionen (gruppe av punkter) som er utpekt av n}v{rende
+          posisjon. Hvis i er -1, vil bare punkter med  et  blekk  lik  det
+          punktet  som  det  pekes p} fylles (flood-fill), ellers antas i }
+          v{re det blekk som grensen best}r av  (boundrary-fill).  Regionen
+          er  fire-forbundet,  d.v.s.  omfatter  punkter  som  kan  n}s med
+          bevegelse oppover, nedover, til venstre og til h|yre.
+
+          P: procedure sound(chan,per,ampl:integer);
+          C: sound(chan,per,ampl) int chan,per,ampl;
+          Chan st}r for kanal nummer for lyd, per st}r  for  periodetid  og
+          ampl st}r normalt for amplitude.
+                  chan:
+                          per:
+                                  ampl:
+                  0
+                          0
+                                  0       
+                                          Bruk   av   denne   kanalen   gir
+                                          nullstilling av all lyd.
+                  1
+                          0..4095
+                                  0..16
+                                          Tonekanal A.  Verdier  0..15  for
+                                          amplitude   gir  fast  toneh|yde,
+                                          verdi 16 gir amplitude  styrt  av
+                                          kanal 5.
+                  2
+                          0..4095
+                                  0..16
+                                          Tonekanal B, se 1.
+                  3
+                          0..31
+                                  0..7
+                                          St|ykanal.  Ampl-feltet er en sum
+                                          som    bestemmer     i     hvilke
+                                          tonekanaler  st|yen skal komme: 1
+                                          for kanal A, 2 for kanal B  og  4
+                                          for kanal C.
+                  4
+                          0..4095
+                                  0..16
+                                          Tonekanal C, se 1.
+                  5
+                          0..65535
+                                  0..9
+                                          "Envelope"-kanal.          Styrer
+                                          amplitude  for   andre   kanaler.
+                                          Ampl-feltet angir modus.
+
+          P: procedure hardcopy;
+          C: hardcopy();
+          Gir  kopi av det som n} finnes p} skjermen ut til skriver. Virker
+          p} samme m}te som CTRL-GRAFIKK tasten.
+
+          P: procedure txtdir(d:integer);
+          C: txtdir(d) int d;
+          Velger skriveretning for  text()/txt()  kallet.  Skriveretning  0
+          tilsvarer mot h|yre, 1 oppover, 2 mot venstre opp/ned, 3 nedover,
+          4  speilvendt  mot  h|yre, 5 speilvendt oppover, 6 speilvendt mot
+          venstre, 7 speilvendt nedover.
+
+          P: function getbar(xsize,ysize:integer;array:GWORD);
+          C: int getbar(xsize,ysize,array) int xsize,ysize; char *array;
+          Kopierer et rektangul{rt omr}de fra skjermen  og  til  et  array.
+          erste   venstre  hj|rne  av  rektangelet  er  gitt  av  n}v{rende
+          posisjon,  st|rrelsen  er  xsize  og  ysize.  Eventuell  viewport
+          ignoreres,   og  rektangelet  b|r  v{re  innenfor  skjermarealet.
+          Kopieringen g}r noe raskere dersom n}v{rende x-posisjon ligger p}
+          en bytegrense. Hva en bytegrense inneb{rer er avhengig av  modus,
+          i  modus  en  m} adressen v{re delelig p} 8, i modus to p} 4 og i
+          modus tre delelig p} to. Verdien er antall bytes  som  er  brukt.
+          Formatet  som  brukes er oftest irrelevant, men allikevel: Antall
+          punkter som pakkes per byte i arrayet er bestemt av antall  ulike
+          blekk  som  er tilgjengelig. I modus to finnes fire blekk; to bit
+          er n|dvendig for } representere dette.  F|lgelig  er  det  pakket
+          fire  punkter per byte. Punktene traverseres horisontalt, med det
+          f|rste punktet i de minst signifikante bit. Hver ny x-rad  legges
+          til n{rmeste byte-grense.
+
+          P: function putbar(xsize,ysize:integer;array:GWORD);
+          C: int putbar(xsize,ysize,array) int xsize,ysize; char *array;
+          Kopierer  fra  et  array  til et rektangul{rt omr}de p} skjermen.
+          Skrivemodus blir tatt hensyn til, men modus 4  kan  ikke  brukes.
+          Verdien  er  antall  bytes  som er brukt. Kopieringen g}r raskere
+          dersom  n}v{rende  x-posisjon  ligger   p}   en   bytegrense   og
+          skrivemodus er null.
+
+          P: procedure viewport(xsize,ysize:integer);
+          C: viewport(xsize,ysize) int xsize,ysize;
+          Begrenser  skriving  til  et  rektangul{rt  omr}de  p}  skjermen.
+          Samtidig  flyttes  koordinatsystemet  slik  at  origo   tilsvarer
+          n}v{rende  posisjon. St|rrelsen av omr}det er xsize og ysize i x-
+          og y-retning. Skrivekommandoer utenfor omr}det ignoreres.  Dersom
+          xsize er null blir viewp}ort skrudd av.
+
+          P: procedure gio(fun:integer;var gcbp:GCBS);
+          C: gio(fun,gcbp) int fun; struct gcb_s *gcbp;
+          Gir  direkte  adgang  til  GIO. Denne funksjonen vil normalt ikke
+          brukes direkte.
+
