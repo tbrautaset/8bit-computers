@@ -1,0 +1,323 @@
+LIBGV2 - Tiki-100 grafikk- og lydbibliotek
+Rekonstruerte Pascal-biblioteker fra TIKI DATA
+Basert p} arbeider av Egil Kvaleberg (LIBG),
+Kim G.S. \yhus (DS_GBIB) og Jarle Strand (LYD)
+TIKO / KP/M / CP/M 2.2 / Z80
+=================================================
+
+KOMMANDOOVERSIKT
+================
+
+GRAFIKK
+-------
+
+ginit()	Nullstill grafikksystemet
+cls()	Blank tekstskjermen
+ink(n)	Velg tegnefarge / blekknummer
+defink(r,g,b)	Definer farge for valgt blekk, r/g/b = 0..100
+defcol(r,g,b)	Alias for defink
+apos(x,y)	 Sett tegneposisjon absolutt
+rpos(dx,dy)	Flytt tegneposisjon relativt
+curpos(&xp,&yp)	Les gjeldende posisjon via pekere
+dot()	Tegn punkt ved gjeldende posisjon
+getpix()	Les pikselfarge ved gjeldende posisjon
+
+LINJER OG REKTANGLER
+--------------------
+
+rline(dx,dy)	Relativ linje
+aline(x,y)	Linje til absolutt punkt
+line(x1,y1,x2,y2)	Linje mellom to punkt
+block(w,h)	Fylt rektangel fra gjeldende posisjon
+rect(x,y,dx,dy)	Rektangelramme
+rectf(x,y,dx,dy)	Fylt rektangel
+
+N}r clip er av og write-mode er replace, bruker flere av disse
+rutinene rask GIO-path.
+
+SIRKEL, ELLIPSE OG BUE
+----------------------
+
+circle(r,rx)	Sirkel/ellipse fra LIBG/GIO
+kellip(cx,cy,rx,ry,t)
+karc(cx,cy,rx,ry,a,d)
+
+a=startvinkel, d=sweep/delta i grader.
+Parameteren t brukes som type/flagg i DS_GBIB-kall.
+
+FYLLING
+-------
+
+fill(border)	Fyll omr}de
+	-1 = flood-fill
+	>=0 = boundary-fill mot gitt grensefarge
+kbound(x,y,b,t)	DS_GBIB boundary-fill wrapper
+kflood(x,y,t)	DS_GBIB flood-fill wrapper
+Š
+FILL kan v{re treg p} store omr}der. Bruk BLOCK eller
+scanline-tegning n}r du bare trenger rektangler eller enkle flater.
+
+TEKST
+-----
+
+txt(strp) / text(strp)
+ch(c)
+font(&p)
+chsize(w,h)
+txtdir(d)
+gbtxt(&s,t)
+txtsiz(x,y)
+bsetfn(&p)
+bstdfn()
+bchw()
+bchd()
+
+BLOKK-KOPIERING
+---------------
+
+getbar(w,h,&buf)	Kopier skjermomr}de til buffer
+putbar(w,h,&buf)	Kopier buffer til skjerm
+getblk(&m,x,y,dx,dy)	DS_GBIB blokkformat: hent blokk
+putblk(&m,x,y)	Legg blokk
+ovrblk(&m,x,y)	Legg blokk med OR
+undblk(&m,x,y)	Legg blokk med AND
+getbs(dx,dy)	Beregn bufferst|rrelse: (dx+1)*(dy+1)+4
+getbbs(dx,dy)	 Alias/DS_GBIB B-blokk st|rrelse
+getbbk(&m,x,y,dx,dy)
+putbbk(&m,x,y)
+ovrbbk(&m,x,y)
+undbbk(&m,x,y)
+
+POLYGON
+-------
+
+kpoly(n,&x[],&y[],t)
+kgpoly(n,&x[],&y[],t)
+
+TURTLE-GRAFIKK
+--------------
+
+tturto(n)
+tturn(n)
+tmove(n)
+tline(n)
+tmovto(x,y)
+tmovby(dx,dy)
+tlinto(x,y)
+tlinby(dx,dy)
+tplot()
+tarc(v,r)
+tellip(rx,ry,t)
+Štrect(dx,dy,t)
+
+LYD - DIREKTE AY-3-8912
+-----------------------
+
+sound(ch,per,ampl)	Spill tone/stoy/envelope
+	ch=0 stopp lyd
+	ch=1 kanal A
+	ch=2 kanal B
+	ch=3 stoy/noise
+	ch=4 kanal C
+	ch=5 envelope
+
+nosnd()	Stopp lyd
+ayreg(reg,val)	Skriv direkte til AY-register
+aywr(reg,val)	Alias for ayreg
+tscale	Note-/periodetabell fra LYD
+
+MODUS OG INNSTILLINGER
+----------------------
+
+gmode(m)	Sett/les grafikkmodus
+setmod(m)	 Alias for gmode
+getmod()	Les grafikkmodus
+wrtm(m)	Write-mode: 0=replace, 1=AND, 2=OR, 3=XOR
+ltyp(t)	Linjetype
+clipon()	Sl} p} software-clipping
+clipof()	Sl} av clipping
+defclp(x1,y1,x2,y2) Definer clip-omr}de
+viewport(x,y)	Sett viewport-origin
+scroll(n)	 Vertikal scroll
+setpen(n)	 Sett pennefarge
+getpen()	Les pennefarge
+setbg(n)	Sett bakgrunnsfarge
+getbg()	Les bakgrunnsfarge
+setpmd(n)	 Sett penmode
+getpmd()	Les penmode
+
+DIREKTE GIO
+-----------
+
+gio(fun)	Kall GIO direkte
+gcb	Adresse til GCB
+gpar()	Les GIO-parametre
+
+GIO-funksjoner:
+ 0=RESET 1=DEFMOD 2=DEFINK 3=DEFVOF 4=RSTGCB
+ 5=GETPAR 6=GETPIX 7=INK 8=PIXEL 9=DOT
+ 10=BLOCK 11=CHAR 12=VECTOR 13=FILL 14=SOUND
+ 15=CIRCLE 16=CURINK 17=TXTDIR 18=HARDCOPY
+ 19=CHSIZE 20=CPY 21=PUTBAR 22=GETBAR
+
+GCB-LAYOUT
+----------
+
+Š+0	GX	+2	GY	+4	GFONT
++6	GCOLC	+7	GWRTM	+8	GLTYP
++9	GMISC	+10 GARG1	+12 GARG2
++14 GARG3	+16 GXORG	+18 GYORG
++20 GXMAG	+22 GYMAG
+
+SMALL-C / ASM-RAMMEVERK
+=======================
+
+Denne versjonen legger til et lite rammeverk som gj|r det lettere
+} portere enkle .MAC til Small-C.
+
+TICK/AVBRUDD
+------------
+
+tickon()	Installer enkel FF16h-avbruddsrutine
+tickof()	Gjenopprett tidligere FF16h-vektor
+tickget()	 Returner 16-bits bildeteller
+tickclr()	 Nullstill bildeteller
+
+Dette er ikke ment } erstatte en h}ndoptimalisert demo-ISR i ren
+assembler. Det er et C-vennlig rammeverk for venting, enkel timing
+og portering.
+
+Eksempel:
+
+main()
+{
+	ginit();
+	gmode(3);
+	tickclr();
+	tickon();
+
+	while (!bdos(6,255)) {
+	while (tickget() == 0)
+	;
+	tickclr();
+	tickof();
+	gmode(2);
+	cls();
+}
+
+MARKOR
+------
+
+curoff()	Skjul markor
+curon()	Vis markor
+
+Disse bruker monitorrutinen ved F00Ch
+
+EKSTRA ALIAS OG KOMPATIBILITET
+==============================
+
+setmod(m)	Alias for grafikkmodus
+getmod()
+Šgpix()
+defcol(r,g,b)	Alias for defink
+settrn(n)
+gettrn()
+setpat(n)
+setclp(n)
+pplot(x,y)
+point(x,y)
+pline(dx,dy)
+bgetx()
+bgety()
+bscur(x,y)
+bsetcu(x,y)
+bsetpn(n)
+clrscr()
+floodf(x,y,t)
+boundf(x,y,b,t)
+getbbk(&m,x,y,dx,dy)
+putbbk(&m,x,y)
+ovrbbk(&m,x,y)
+undbbk(&m,x,y)
+getbgc()
+setbgc(n)
+setfnt(&p)
+stdfnt()
+
+BEGRENSNINGER
+=============
+
+- Ingen hardware-sprites.
+- Ingen hardware horisontal scrolling.
+- Vertikal scroll finnes, men horisontal scroll m} gjores i software.
+- FILL kan v{re treg p} store omr}der.
+- Fullskjerm software-scroll i hoy hastighet er ikke realistisk.
+- TICKON gir enkel C-timing, men er ikke like raskt eller fleksibelt
+	som en spesialskrevet ISR i assembler.
+
+YTELSESTIPS
+===========
+
+1. Bruk GIO-primitiver n}r de finnes.
+2. Bruk BLOCK eller RLINE i stedet for DOT i store lokker.
+3. Sl} av clipping n}r du ikke trenger det.
+4. Bruk wrtm(0) for raskeste normaltegning.
+5. Bruk wrtm(3) for XOR-animasjon: tegn, flytt, tegn igjen.
+6. Prekalkuler polygon-, arc- og turtle-data hvis de brukes ofte.
+7. Bruk GETBAR/PUTBAR til sprites og bakgrunnsrestore.
+8. Unng} FILL i animasjonslokker.
+
+BYGGING
+=======
+
+Assembler:
+	M80 =LIBGV2
+
+ŠC-eksempel:
+	CC PROG.C >PROG.MAC
+	M80 =PROG
+	L80 PROG,LIBGV2/S,CLIB/S,PROG/N/E
+
+Hvis CLIB ligger p} diskett A:
+	L80 PROG,LIBGV2/S,A:CLIB,PROG/N/E
+
+EKSEMPEL
+========
+
+main()
+{
+	ginit();
+	cls();
+
+	ink(1); defink(0,0,100);
+	apos(3,20); block(95,27);
+
+	ink(0);
+	apos(5,23); block(91,21);
+
+	ink(15); defink(100,100,100);
+	apos(10,35); txt("Hello World");
+}
+
+RETTELSER
+=========
+
+LYDVALG
+=======
+
+Hvis flere gamle kilder hadde en SOUND-rutine, er aktiv SOUND i
+LIBGV2 valgt fra Jarle Strand / LYD-koden. Dette er den direkte
+AY-3-8912-varianten og er den foretrukne raske lydrutinen.
+
+Aktive lydnavn:
+	sound(ch,per,ampl)
+	nosnd()
+	ayreg(reg,val)
+	aywr(reg,val)
+	tscale
+
+Eventuell eldre GIO-basert sound fra grafikkbiblioteket skal ikke
+v{re standardnavnet i LIBGV2, for } unng} navnekollisjon og
+tregere lydvei.
+
+
