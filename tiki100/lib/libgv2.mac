@@ -5,7 +5,7 @@
 ; fra Tiki-Data AS for bruk av Tiki grafikk og lyd i
 ; Macro-80 og Small-C.
 ;
-; Prosedyrer som ikke brukes kan slettes for å spare plass.
+; Prosedyrer som ikke brukes kan slettes for } spare plass.
 ;
 ; Basert på arbeider av Egil Kvaleberg (LIBG),
 ; Kim G.S. \yhus (DS_GBIB) og Jarle Strand (LYD)
